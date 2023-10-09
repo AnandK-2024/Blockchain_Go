@@ -19,6 +19,7 @@ type PublicKey struct {
 }
 
 type Signature struct {
+	s, r *big.Int
 }
 
 // Step 1: Create a random private key
@@ -50,7 +51,7 @@ func (k *PublicKey) address() types.Address {
 	return types.AddressFromByte(hash[len(hash)-20:])
 }
 
-func (p *PrivateKey) SignMessage(hash []byte) (*big.Int, *big.Int) {
+func (p *PrivateKey) SignMessage(hash []byte) (*Signature,error) {
 	r, s, err := ecdsa.Sign(rand.Reader, p.key, hash)
 
 	if err != nil {
@@ -58,5 +59,12 @@ func (p *PrivateKey) SignMessage(hash []byte) (*big.Int, *big.Int) {
 		panic(err)
 	}
 
-	return r, s
+	return &Signature{
+		r: r,
+		s: s,
+	},nil
+}
+
+func (Sig *Signature) verify(pub PublicKey, hash []byte) bool{
+	return ecdsa.Verify(pub.key,hash,Sig.r,Sig.s)
 }

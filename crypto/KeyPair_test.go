@@ -34,11 +34,15 @@ func TestSignMessage(t *testing.T) {
 
 	fmt.Println("message hash:=", hash)
 
-	r, s := privKey.SignMessage(hash[:])
+	signature, err := privKey.SignMessage(hash[:])
+	if err != nil {
+		t.Errorf("Failed to sign the message")
 
-	fmt.Println("signed hash:", r, s)
+	}
 
-	if r == nil || s == nil {
+	fmt.Println("signed hash:", signature)
+
+	if signature.r == nil || signature.s == nil {
 		t.Errorf("Failed to sign the message")
 	}
 }
@@ -63,5 +67,22 @@ func TestPublicKeyAddress(t *testing.T) {
 
 	if len(address) == 0 {
 		t.Errorf("Failed to generate address from public key")
+	}
+}
+
+func TestSignAndVerifyMessage(t *testing.T) {
+	privKey := GeneratePrivatekey()
+	pubKey := privKey.GeneratePublicKey()
+
+	message := []byte("Hello, world!")
+	hash := sha256.Sum256(message)
+
+	signature, err := privKey.SignMessage(hash[:])
+	if err != nil {
+		t.Errorf("failed to sign message")
+	}
+
+	if !signature.verify(pubKey, hash[:]) {
+		t.Error("Message verification failed")
 	}
 }
