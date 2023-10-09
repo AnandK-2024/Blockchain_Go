@@ -1,9 +1,11 @@
 package network
 
+import "net"
+
 type NetAddr string
 
 type RPC struct {
-	from    NetAddr // sent message fron transport
+	from    net.Addr // sent message fron transport
 	payload []byte  // data from server through rpc
 
 }
@@ -11,6 +13,7 @@ type RPC struct {
 type Transport interface {
 	consume() <-chan RPC
 	connect(Transport) error
-	send(NetAddr, []byte) error
-	Addr() NetAddr
+	send(net.Addr, []byte) error
+	Addr() net.Addr
+	Broadcast([]byte) error
 }
