@@ -25,12 +25,12 @@ func (tx *Transaction) sign(privkey *crypto.PrivateKey) error {
 	return nil
 }
 
-func (tx *Transaction) verify() error {
+func (tx *Transaction) Verify() error {
 	if tx.signature == nil {
 		return fmt.Errorf("tx has not signature")
 	}
 	sig := tx.signature
-	sucess := sig.verify(tx.publickey, tx.data)
+	sucess := sig.Verify(tx.publickey, tx.data)
 	if !sucess {
 		return fmt.Errorf("invalid tx signature ")
 	}

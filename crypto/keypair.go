@@ -65,6 +65,6 @@ func (p *PrivateKey) SignMessage(hash []byte) (*Signature, error) {
 	}, nil
 }
 
-func (Sig *Signature) verify(pub PublicKey, hash []byte) bool {
+func (Sig *Signature) Verify(pub PublicKey, hash []byte) bool {
 	return ecdsa.Verify(pub.key, hash, Sig.r, Sig.s)
 }

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/gob"
+	"fmt"
 
 	"github.com/AnandK-2024/Blockchain/crypto"
 	"github.com/AnandK-2024/Blockchain/types"
@@ -51,4 +52,30 @@ func (b *Block) Hash() types.Hash {
 
 	h := sha256.Sum256(buf.Bytes())
 	return types.Hash(h)
+}
+
+func (b *Block) Sign(privkey *crypto.PrivateKey) error {
+	hash := b.Hash()
+	signature, err := privkey.SignMessage(hash[:])
+	if err != nil {
+		fmt.Println("unable to sign block with private key")
+		panic(err)
+	}
+	b.validator=privkey.GeneratePublicKey()
+	b.hash=hash
+	b.signature = signature
+
+	return nil
+}
+
+func (b *Block) Verify() error {
+	if b.signature == nil {
+		return fmt.Errorf("block has not signature")
+	}
+	sig := b.signature
+	sucess := sig.Verify(b.validator, b.hash[:])
+	if !sucess {
+		return fmt.Errorf("invalid block header signature ")
+	}
+	return nil
 }
