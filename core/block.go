@@ -61,8 +61,8 @@ func (b *Block) Sign(privkey *crypto.PrivateKey) error {
 		fmt.Println("unable to sign block with private key")
 		panic(err)
 	}
-	b.validator=privkey.GeneratePublicKey()
-	b.hash=hash
+	b.validator = privkey.GeneratePublicKey()
+	b.hash = hash
 	b.signature = signature
 
 	return nil
