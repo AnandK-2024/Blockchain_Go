@@ -9,6 +9,7 @@ require (
 	github.com/filecoin-project/go-data-transfer v1.15.3 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/hannahhoward/cbor-gen-for v0.0.0-20200817222906-ea96cece81f1 // indirect
+	github.com/holiman/uint256 v1.2.3 // indirect
 	github.com/ipfs/go-block-format v0.0.3 // indirect
 	github.com/ipfs/go-cid v0.1.0 // indirect
 	github.com/ipfs/go-ipfs-util v0.0.2 // indirect
