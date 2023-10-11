@@ -31,12 +31,35 @@ type Block struct {
 	hash types.Hash
 }
 
+// get bytes of header of block
+func (h *Header) Bytes() []byte {
+	buf := &bytes.Buffer{}
+	enc := gob.NewEncoder(buf)
+	enc.Encode(h)
+
+	return buf.Bytes()
+}
+
 func NewBlock(h *Header, txs []Transaction) *Block {
 	return &Block{
 		Header:       h,
 		Transactions: txs,
 	}
 }
+
+// func NewBlockFromPrevHeader(txs [] Transaction) (*Block,error){
+
+// }
+
+// func CalculateDataHash(txs []Transaction) (types.Hash, error) {
+// 	buf := &bytes.Buffer{}
+
+// 	for _, tx := range txs {
+// 		if err := tx.Encode(NewGobTxEncoder(buf)); err != nil {
+// 			return
+// 		}
+// 	}
+// }
 
 func (b *Block) Hash() types.Hash {
 	buf := &bytes.Buffer{}
@@ -72,10 +95,19 @@ func (b *Block) Verify() error {
 	if b.signature == nil {
 		return fmt.Errorf("block has not signature")
 	}
+
+	// validate signature
 	sig := b.signature
 	sucess := sig.Verify(b.validator, b.hash[:])
 	if !sucess {
 		return fmt.Errorf("invalid block header signature ")
 	}
+	// verify all transactions of block
+	for _, tx := range b.Transactions {
+		if err := tx.Verify(); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
