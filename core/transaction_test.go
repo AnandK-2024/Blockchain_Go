@@ -1,13 +1,15 @@
 package core
 
 import (
+	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"testing"
 
 	"github.com/AnandK-2024/Blockchain/crypto"
-	"github.com/AnandK-2024/Blockchain/types"
 	"github.com/stretchr/testify/assert"
-	// "github.com/holiman/uint256"
+	// // "github.com/holiman/uint256"
 )
 
 func TestTransaction(t *testing.T) {
@@ -23,45 +25,103 @@ func TestTransactionHash(t *testing.T) {
 	data := []byte("test data")
 	transaction := NewTransaction(data)
 
-	data1 := []byte("expected hash")
-	databyte := types.HashFromByte(data1)
-	// Calculate the expected hash
-	expectedHash := types.Hash(databyte)
-
-	// // Mock the behavior of gob encoding
-	// encodeMock := func(enc Encoder[*Transaction]) error {
-	// 	return enc.Encode(transaction)
-	// }
-
-	// // Override the Encode method with the mock
-	// transaction.Encode = encodeMock
-
 	// Call the Hash function
 	hash := transaction.Hash()
-	fmt.Println("hash of transaction data", hash)
+	fmt.Println("hash of transaction data and length of hash", hash, len(hash))
 
-	// Verify that the calculated hash matches the expected hash
-	if hash != expectedHash {
-		t.Errorf("Expected hash to be %s, but got %s", expectedHash, hash)
+	assert.Equal(t, 32, len(hash))
+}
+
+func TestTransactionSignAndVerify(t *testing.T) {
+	data := []byte("test data")
+	privKey := crypto.GeneratePrivatekey()
+	// pubkey:=privKey.GeneratePublicKey()
+
+	// Create a new transaction
+	transaction := NewTransaction(data)
+
+	// Sign the transaction
+	err := transaction.sign(&privKey)
+	if err != nil {
+		t.Errorf("Failed to sign transaction: %s", err)
+	}
+
+	// Verify the transaction signature
+	err = transaction.Verify()
+	if err != nil {
+		t.Errorf("Failed to verify transaction signature: %s", err)
 	}
 }
 
-// func TestTransactionSignAndVerify(t *testing.T) {
-// 	data := []byte("test data")
-// 	privKey, _ := crypto.GenerateKeyPair()
+// mekle root test
+func TestCalculateMerkleRoot(t *testing.T) {
+	// Create some example transactions
+	txs := []Transaction{
+		{
+			data:      []byte("Transaction 1"),
+			value:     100,
+			from:      crypto.PublicKey{},
+			signature: &crypto.Signature{},
+			Nonce:     1,
+		},
+		{
+			data:      []byte("Transaction 2"),
+			value:     200,
+			from:      crypto.PublicKey{},
+			signature: &crypto.Signature{},
+			Nonce:     2,
+		},
+		{
+			data:      []byte("Transaction 3"),
+			value:     300,
+			from:      crypto.PublicKey{},
+			signature: &crypto.Signature{},
+			Nonce:     3,
+		},
+	}
 
-// 	// Create a new transaction
-// 	transaction := NewTransaction(data)
+	// Calculate the expected Merkle root manually
+	hashes := make([]string, len(txs))
+	for i, tx := range txs {
+		h := tx.Hash()
+		hashes[i] = hex.EncodeToString(h[:])
+	}
 
-// 	// Sign the transaction
-// 	err := transaction.sign(privKey)
-// 	if err != nil {
-// 		t.Errorf("Failed to sign transaction: %s", err)
-// 	}
+	for len(hashes) > 1 {
+		if len(hashes)%2 != 0 {
+			hashes = append(hashes, hashes[len(hashes)-1])
+		}
 
-// 	// Verify the transaction signature
-// 	err = transaction.Verify()
-// 	if err != nil {
-// 		t.Errorf("Failed to verify transaction signature: %s", err)
-// 	}
-// }
+		nextLevel := make([]string, len(hashes)/2)
+
+		for i := 0; i < len(hashes); i += 2 {
+			concatenated := hashes[i] + hashes[i+1]
+			hash := sha256.Sum256([]byte(concatenated))
+			nextLevel[i/2] = hex.EncodeToString(hash[:])
+		}
+
+		hashes = nextLevel
+	}
+
+	expectedMerkleRoot := hashes[0]
+
+	// Calculate the Merkle root using the function
+	calculatedMerkleRoot := CalculateMerkleRoot(txs)
+
+	// Compare the expected and calculated Merkle roots
+	if calculatedMerkleRoot != expectedMerkleRoot {
+		t.Errorf("Expected Merkle root: %s, but got: %s", expectedMerkleRoot, calculatedMerkleRoot)
+	}
+}
+
+func TestTxEncodeDecode(t *testing.T) {
+	tx := NewRandomTransaction(100)
+	fmt.Println("new random transaction is:=", tx)
+	buf := &bytes.Buffer{}
+	assert.Nil(t, tx.Encode(NewGobTxEncoder(buf)))
+	txDecode := new(Transaction)
+	assert.Nil(t, txDecode.Decode(NewGobTxDecoder(buf)))
+	fmt.Println("decoded transaction:", txDecode)
+	assert.Equal(t, tx, txDecode)
+
+}
