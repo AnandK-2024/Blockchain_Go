@@ -29,13 +29,13 @@ func TestIsZero(t *testing.T) {
 	// Test case 1: Non-zero hash
 	nonZeroHash := HashFromByte(make([]byte, 32))
 	nonZeroHash[0] = 1
-	if nonZeroHash.isZero() {
+	if nonZeroHash.IsZero() {
 		t.Errorf("Expected non-zero hash to return false for isZero(), but got true")
 	}
 
 	// Test case 2: Zero hash
 	zeroHash := Hash{}
-	if !zeroHash.isZero() {
+	if !zeroHash.IsZero() {
 		t.Errorf("Expected zero hash to return true for isZero(), but got false")
 	}
 }

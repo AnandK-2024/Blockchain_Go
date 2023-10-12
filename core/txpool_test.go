@@ -1,6 +1,8 @@
 package core
 
 import (
+	"math/rand"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -34,7 +36,23 @@ func TestTxPoolAdd(t *testing.T) {
 
 	}
 	p.Flush()
-	assert.Equal(t,0,p.Len())
+	assert.Equal(t, 0, p.Len())
+}
+
+func TestSortTransaction(t *testing.T) {
+	// create new trasaction pool
+	p := NewTxPool()
+
+	// set length of transaction
+	txlen := 100
+	for i := 0; i < txlen; i++ {
+		tx := NewTransaction([]byte(strconv.FormatInt(int64(i), 10)))
+		tx.SetFirstSeen(int64(i * rand.Intn(1000)))
+		assert.Nil(t, p.Add(tx))
+	}
+	assert.Equal(t, 100, p.Len())
+	/// write test for sort transaction
+	// p=NewTxMapSorter(&p.Transactions)
 }
 
 // func TestTxPoolMaxLength(t *testing.T) {

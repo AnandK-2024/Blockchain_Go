@@ -82,7 +82,7 @@ func TestSignAndVerifyMessage(t *testing.T) {
 		t.Errorf("failed to sign message")
 	}
 
-	if !signature.verify(pubKey, hash[:]) {
+	if !signature.Verify(pubKey, hash[:]) {
 		t.Error("Message verification failed")
 	}
 }

@@ -22,7 +22,7 @@ func HashFromByte(b []byte) Hash{
 }
 
 // to check given hash value is zero or not
-func (h Hash) isZero() bool{
+func (h Hash) IsZero() bool{
 	for i:=0;i<32;i++{
 		if h[i]!=0{
 			return false

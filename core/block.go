@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/gob"
 	"fmt"
+	"time"
 
 	"github.com/AnandK-2024/Blockchain/crypto"
 	"github.com/AnandK-2024/Blockchain/types"
@@ -40,6 +41,7 @@ func (h *Header) Bytes() []byte {
 	return buf.Bytes()
 }
 
+// create new block with header and array of transaction
 func NewBlock(h *Header, txs []Transaction) *Block {
 	return &Block{
 		Header:       h,
@@ -47,20 +49,54 @@ func NewBlock(h *Header, txs []Transaction) *Block {
 	}
 }
 
-// func NewBlockFromPrevHeader(txs [] Transaction) (*Block,error){
+// create new block with previous header and transactions
+func NewBlockFromPrevHeader(prevHeader Header,txs [] Transaction) (*Block,error){
+	merklerootstring:=CalculateMerkleRoot(txs)
+	merkleroothash,err:=StringToHash(merklerootstring)
+	if err != nil {
+		return nil, fmt.Errorf("error in converting string to merklehash")
+	}
+	header:=&Header{
+		version: 1,
+		prevblockHash:prevHeader.prevblockHash ,
+		DataHash: merkleroothash,
+		Timestamp: time.Now().UnixNano(),
+		Height: prevHeader.Height,
+	}
+	return NewBlock(header,txs),nil
 
-// }
+}
 
-// func CalculateDataHash(txs []Transaction) (types.Hash, error) {
-// 	buf := &bytes.Buffer{}
+// calculate data hash as merkle tree hash root of transaction
+func (b *Block) CalculateMerkleRoot() error {
+	if len(b.Transactions) == 0 {
+		return fmt.Errorf("No transaction avilable!! Add transactions into block")
+	}
+	merklestring := CalculateMerkleRoot(b.Transactions)
+	merkleHashRoot, err := StringToHash(merklestring)
+	if err != nil {
+		return fmt.Errorf("error in converting string to merklehash")
+	}
+	b.DataHash = merkleHashRoot
+	return nil
+}
 
-// 	for _, tx := range txs {
-// 		if err := tx.Encode(NewGobTxEncoder(buf)); err != nil {
-// 			return
-// 		}
-// 	}
-// }
+// add transaction in block
+func(b *Block) AddTransaction(tx Transaction){
+	b.Transactions=append(b.Transactions, tx)
+	b.CalculateMerkleRoot()
 
+}
+
+// add transactions in block
+func (b *Block) AddTransactions(txs []Transaction){
+	for i:=0;i<len(txs);i++{
+		b.Transactions=append(b.Transactions, txs[i])
+	}
+	b.CalculateMerkleRoot()
+}
+
+// calculate hash of block
 func (b *Block) Hash() types.Hash {
 	buf := &bytes.Buffer{}
 	// NewEncoder returns a new encoder that will transmit on the io.Writer.
@@ -77,6 +113,7 @@ func (b *Block) Hash() types.Hash {
 	return types.Hash(h)
 }
 
+// validator will sign the block
 func (b *Block) Sign(privkey *crypto.PrivateKey) error {
 	hash := b.Hash()
 	signature, err := privkey.SignMessage(hash[:])
@@ -91,6 +128,7 @@ func (b *Block) Sign(privkey *crypto.PrivateKey) error {
 	return nil
 }
 
+// verifier verify the signature the block
 func (b *Block) Verify() error {
 	if b.signature == nil {
 		return fmt.Errorf("block has not signature")
@@ -110,4 +148,17 @@ func (b *Block) Verify() error {
 	}
 
 	return nil
+}
+
+// validator can validate the block before voting / finalization
+
+
+// enoding block
+func (b *Block) Encode(enc Encoder[*Block]) error {
+	return enc.Encode(b)
+}
+
+//decoding block
+func (b *Block) Decode(dec Decoder[*Block]) error {
+	return dec.Decode(b)
 }

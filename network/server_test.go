@@ -36,7 +36,7 @@ func TestStart(t *testing.T) {
 	}()
 
 	opt := serveropts{
-		Transports: []LocalTransport{*local},
+		//
 	}
 
 	s := Newserver(opt)

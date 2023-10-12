@@ -1,9 +1,8 @@
 package core
 
 import (
-	"bytes"
+	"crypto/elliptic"
 	"encoding/gob"
-	"fmt"
 	"io"
 )
 
@@ -20,6 +19,10 @@ type GobTxEncoder struct {
 }
 
 func NewGobTxEncoder(w io.Writer) *GobTxEncoder {
+	gob.Register(elliptic.P256())
+	gob.Register(Transaction{}) // Register the Transaction struct
+	// gob.RegisterName("Transaction", Transaction{}) // Register the Transaction struct with a type ID
+
 	return &GobTxEncoder{
 		w: w,
 	}
@@ -30,22 +33,26 @@ func (g *GobTxEncoder) Encode(tx *Transaction) error {
 	return gob.NewEncoder(g.w).Encode(tx)
 }
 
-// EncodeTransaction encodes a transaction into a byte slice using the gob encoding format.
-func EncodeTransaction(tx *Transaction) ([]byte, error) {
-	var buf bytes.Buffer
-	enc := gob.NewEncoder(&buf)
-	err := enc.Encode(tx)
-	if err != nil {
-		return nil, fmt.Errorf("error encoding transaction: %s", err)
-	}
-	return buf.Bytes(), nil
-}
+// // EncodeTransaction encodes a transaction into a byte slice using the gob encoding format.
+// func EncodeTransaction(tx *Transaction) ([]byte, error) {
+// 	var buf bytes.Buffer
+// 	enc := gob.NewEncoder(&buf)
+// 	err := enc.Encode(tx)
+// 	if err != nil {
+// 		return nil, fmt.Errorf("error encoding transaction: %s", err)
+// 	}
+// 	return buf.Bytes(), nil
+// }
 
 type GobtxDecoder struct {
 	r io.Reader
 }
 
 func NewGobTxDecoder(r io.Reader) *GobtxDecoder {
+	gob.Register(elliptic.P256())
+	gob.Register(Transaction{}) // Register the Transaction struct
+	// gob.RegisterName("Transaction", Transaction{}) // Register the Transaction struct with a type ID
+
 	return &GobtxDecoder{
 		r: r,
 	}
@@ -56,23 +63,24 @@ func (g *GobtxDecoder) Decode(tx *Transaction) error {
 	return gob.NewDecoder(g.r).Decode(tx)
 }
 
-// DecodeTransaction decodes a transaction from a byte slice using the gob encoding format.
-func DecodeTransaction(data []byte) (*Transaction, error) {
-	var tx Transaction
-	buf := bytes.NewBuffer(data)
-	dec := gob.NewDecoder(buf)
-	err := dec.Decode(&tx)
-	if err != nil {
-		return nil, fmt.Errorf("error decoding transaction: %s", err)
-	}
-	return &tx, nil
-}
+// // DecodeTransaction decodes a transaction from a byte slice using the gob encoding format.
+// func DecodeTransaction(data []byte) (*Transaction, error) {
+// 	var tx Transaction
+// 	buf := bytes.NewBuffer(data)
+// 	dec := gob.NewDecoder(buf)
+// 	err := dec.Decode(&tx)
+// 	if err != nil {
+// 		return nil, fmt.Errorf("error decoding transaction: %s", err)
+// 	}
+// 	return &tx, nil
+// }
 
 type GobBlockEncoder struct {
 	w io.Writer
 }
 
 func NewGobBlockEncoder(w io.Writer) *GobBlockEncoder {
+	gob.Register(elliptic.P256())
 	return &GobBlockEncoder{
 		w: w,
 	}
@@ -88,6 +96,7 @@ type GobBlockDecoder struct {
 }
 
 func NewGobBlockDecoder(r io.Reader) *GobBlockDecoder {
+	gob.Register(elliptic.P256())
 	return &GobBlockDecoder{
 		r: r,
 	}

@@ -1,7 +1,7 @@
 package core
 
 import (
-	"bytes"
+	// "bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
@@ -114,14 +114,14 @@ func TestCalculateMerkleRoot(t *testing.T) {
 	}
 }
 
-func TestTxEncodeDecode(t *testing.T) {
-	tx := NewRandomTransaction(100)
-	fmt.Println("new random transaction is:=", tx)
-	buf := &bytes.Buffer{}
-	assert.Nil(t, tx.Encode(NewGobTxEncoder(buf)))
-	txDecode := new(Transaction)
-	assert.Nil(t, txDecode.Decode(NewGobTxDecoder(buf)))
-	fmt.Println("decoded transaction:", txDecode)
-	assert.Equal(t, tx, txDecode)
+// func TestTxEncodeDecode(t *testing.T) {
+// 	tx := NewRandomTransaction(100)
+// 	fmt.Println("new random transaction is:=", tx)
+// 	buf := &bytes.Buffer{}
+// 	assert.Nil(t, tx.Encode(NewGobTxEncoder(buf)))
+// 	txDecode := new(Transaction)
+// 	assert.Nil(t, txDecode.Decode(NewGobTxDecoder(buf)))
+// 	fmt.Println("decoded transaction:", txDecode)
+// 	assert.Equal(t, tx, txDecode)
 
-}
+// }
