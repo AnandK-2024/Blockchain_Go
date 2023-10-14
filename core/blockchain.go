@@ -3,7 +3,9 @@ package core
 import (
 	"fmt"
 	"sync"
+	"time"
 
+	"github.com/AnandK-2024/Blockchain/crypto"
 	"github.com/AnandK-2024/Blockchain/types"
 	"github.com/go-kit/log"
 )
@@ -62,12 +64,13 @@ func (B *Blockchain) Height() uint32 {
 
 // add the block in blockchain :
 func (B *Blockchain) AddBlock(block *Block) error {
-	B.lock.Lock()
-	defer B.lock.Unlock()
-	if err := B.validator.ValidateBlock(block); err != nil {
-		return fmt.Errorf("block verification test failed")
+	// B.lock.Lock()
+	// defer B.lock.Unlock()
+	if err := B.ValidateBlock(block); err != nil {
+		fmt.Println("block verification test failed with given below reason")
+		return err
 	}
-	B.AddBlockWithoutValidation(block)
+	B.addBlockWithoutValidation(block)
 
 	return nil
 }
@@ -83,15 +86,16 @@ func (B *Blockchain) HasBlock(height uint32) bool {
 }
 
 // add block without validation
-func (B *Blockchain) AddBlockWithoutValidation(b *Block) error {
+func (B *Blockchain) addBlockWithoutValidation(b *Block) error {
 
 	B.headers = append(B.headers, b.Header)
+	B.blocks = append(B.blocks, b)
 	return nil
 }
 
 // add genesis block in blockchain
-func (B *Blockchain) AddGensisBlock(b *Block) error {
-
+func (B *Blockchain) AddGensisBlock(genesis *Block) error {
+	B.addBlockWithoutValidation(genesis)
 	return nil
 }
 
@@ -106,10 +110,10 @@ func (B *Blockchain) GetHeader(height uint32) (*Header, error) {
 }
 
 // get block by hash in blockchain
-func (b *Blockchain) GetBlockByHash(hash types.Hash) (*Block, error) {
-	b.lock.Lock()
-	defer b.lock.Unlock()
-	block, ok := b.blockStore[hash]
+func (B *Blockchain) GetBlockByHash(hash types.Hash) (*Block, error) {
+	B.lock.Lock()
+	defer B.lock.Unlock()
+	block, ok := B.blockStore[hash]
 	if !ok {
 		return nil, fmt.Errorf("block with %d hash not found", hash)
 	}
@@ -117,10 +121,10 @@ func (b *Blockchain) GetBlockByHash(hash types.Hash) (*Block, error) {
 }
 
 // get block by height of blockchain
-func (b *Blockchain) GetBlock(height uint32) (*Block, error) {
-	b.lock.Lock()
-	defer b.lock.Unlock()
-	return b.blocks[height], nil
+func (B *Blockchain) GetBlock(height uint32) (*Block, error) {
+	// B.lock.Lock()
+	// defer B.lock.Unlock()
+	return B.blocks[height], nil
 }
 
 // get transactoin of blockchain by hash
@@ -133,4 +137,73 @@ func (b *Blockchain) GetTxByHash(hash types.Hash) (*Transaction, error) {
 		return nil, fmt.Errorf("transaction with given hash %d not found ", hash)
 	}
 	return tx, nil
+}
+
+// check validation of the block before finalize by verifier
+func (B *Blockchain) ValidateBlock(b *Block) error {
+	fmt.Println("validation of block is starting................")
+	// validate block height
+	if B.HasBlock(b.Height) {
+		return fmt.Errorf("Blockchian already contain block %d", b.Height)
+	}
+
+	// validate current height of block in blockchain:
+	// current height=height( blockchain )+1
+	if b.Height != B.Height()+1 {
+		return fmt.Errorf("block height: %d is too high--> current height is: %d", b.Height, B.Height())
+	}
+
+	// validate prev header of the block(must present in blockchian)
+	prevBlock, err := B.GetBlock(b.Height - 1)
+	if err != nil {
+		return err
+	}
+
+	// validate prevhash of block
+	hash := prevBlock.Hash()
+	if b.prevblockHash != hash {
+		return fmt.Errorf("Hash of previous block: %d is invalid", b.prevblockHash)
+	}
+
+	// verify the block signature
+	if err := b.Verify(); err != nil {
+		return fmt.Errorf("invalid block signature")
+	}
+
+	// validate timestamp of block
+	// should be less than current time
+
+	if Time := b.Header.Timestamp; Time > int64(time.Now().UnixMicro()) {
+		return fmt.Errorf("timestamp of current block must less than curent timestamp")
+	}
+
+	// validate merklehashroot of transactions
+	hashstring := CalculateMerkleRoot(b.Transactions)
+	merklehash, _ := StringToHash(hashstring)
+	if merklehash != b.DataHash {
+		return fmt.Errorf("invalid merkle hash root ")
+	}
+	fmt.Println("validation of block successfull")
+	return nil
+}
+
+// mine block by validator/miner
+func (B *Blockchain) Mine(b *Block, privkey *crypto.PrivateKey) (types.Hash, error) {
+
+	// calculate merkle root hash and set to data hash of block header
+	if err := b.CalculateMerkleRoot(); err != nil {
+		return types.Hash{0}, err
+	}
+
+	// set timestamp of block during mine
+	b.Timestamp = int64(time.Now().UnixMicro())
+
+	// calculate hash of block and return
+	hash := b.Hash()
+	b.hash = hash
+
+	//sign the block by miner/validator
+	b.Sign(privkey)
+
+	return hash, nil
 }
