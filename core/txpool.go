@@ -3,9 +3,9 @@ package core
 import (
 	// "fmt"
 
+	// "fmt"
 	"sort"
 
-	// "github.com/AnandK-2024/Blockchain/core"
 	"github.com/AnandK-2024/Blockchain/types"
 )
 
@@ -16,17 +16,17 @@ type TxMapSorter struct {
 
 // Len implements sort.Interface.
 func (s *TxMapSorter) Len() int {
-	return len(s.transactions)	
+	return len(s.transactions)
 }
 
 // Less implements sort.Interface.
-func (s *TxMapSorter) Less(i int, j int) bool { 
-	return s.transactions[i].firstSeen< s.transactions[j].firstSeen
+func (s *TxMapSorter) Less(i int, j int) bool {
+	return s.transactions[i].firstSeen < s.transactions[j].firstSeen
 }
 
 // Swap implements sort.Interface.
 func (s *TxMapSorter) Swap(i int, j int) {
-	s.transactions[i],s.transactions[j]=s.transactions[j ],s.transactions[i]
+	s.transactions[i], s.transactions[j] = s.transactions[j], s.transactions[i]
 }
 
 type TxPool struct {
@@ -59,7 +59,6 @@ func NewTxPool() *TxPool {
 func (txp *TxPool) Add(tx *Transaction) error {
 	hash := tx.Hash()
 	if txp.Has(hash) {
-		// return fmt.Errorf("transacton already added")
 		return nil
 	}
 	txp.Transactions[hash] = tx
@@ -85,9 +84,8 @@ func (txp *TxPool) Flush() {
 	txp.Transactions = make(map[types.Hash]*Transaction)
 }
 
-
 // return all transactions of pool
-func (txp *TxPool) Transaction() []*Transaction{
-	sortertxs:=NewTxMapSorter(txp.Transactions)
+func (txp *TxPool) Transaction() []*Transaction {
+	sortertxs := NewTxMapSorter(txp.Transactions)
 	return sortertxs.transactions
 }
