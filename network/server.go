@@ -87,6 +87,7 @@ free:
 }
 
 func (s *server) CreateNewBlock() {
+	
 	fmt.Println("creating new block ....")
 }
 

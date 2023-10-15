@@ -13,6 +13,12 @@ type Blockvalidator struct {
 	B *Blockchain
 }
 
+// set block validator in blockchain
+func NewBlockValidator(b *Blockchain) * Blockvalidator{
+	return &Blockvalidator{
+		B: b,
+	}
+}
 // validator will validate the block before finalize
 func (v *Blockvalidator) ValidateBlock(b *Block) error {
 	// validate block height

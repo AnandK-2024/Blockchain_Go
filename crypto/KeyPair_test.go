@@ -62,7 +62,7 @@ func TestPublicKeyAddress(t *testing.T) {
 	privKey := GeneratePrivatekey()
 	pubKey := privKey.GeneratePublicKey()
 
-	address := pubKey.address()
+	address := pubKey.Address()
 	fmt.Println("privkey,pubkey,address:", privKey, pubKey, address)
 
 	if len(address) == 0 {

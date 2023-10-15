@@ -70,6 +70,16 @@ func (B *Blockchain) AddBlock(block *Block) error {
 		fmt.Println("block verification test failed with given below reason")
 		return err
 	}
+	for _, tx := range block.Transactions {
+		B.logger.Log("msg", "execution code", "len", len(tx.data), "hash", tx.Hash())
+		s := state{}
+		state := s.NewState()
+		vm := NewVM(tx.data, *state)
+		if err := vm.Run(); err != nil {
+			return err
+		}
+		B.logger.Log("vm result:", vm.stack.peek())
+	}
 	B.addBlockWithoutValidation(block)
 
 	return nil

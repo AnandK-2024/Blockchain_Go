@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/gob"
+	"time"
 
 	"encoding/hex"
 
@@ -20,11 +21,21 @@ type Transaction struct {
 	value     uint64
 	from      crypto.PublicKey
 	signature *crypto.Signature
+	to        crypto.PublicKey
 	Nonce     uint64
-	hash      types.Hash
+	// hash  types.Hash
 	// first seen is the timestamp when tx is seen locally
 	firstSeen int64
 }
+
+// type MintTx struct {
+// 	Fee             int64
+// 	NFT             types.Hash
+// 	Collection      types.Hash
+// 	MetaData        []byte
+// 	CollectionOwner crypto.PublicKey
+// 	Signature       crypto.Signature
+// }
 
 /*
 step1: make Transaction data
@@ -36,7 +47,8 @@ step4: verifier can verify transaction
 func NewTransaction(data []byte) *Transaction {
 	return &Transaction{
 		data:  data,
-		Nonce: uint64(rand.Int63n(1000000000000000)),
+		Nonce: uint64(rand.Int63n(100)),
+		firstSeen:int64(time.Now().UnixNano()),
 	}
 }
 
@@ -44,10 +56,8 @@ func NewRandomTransaction(datasize int) *Transaction {
 	return NewTransaction(types.RandomByte(datasize))
 }
 
-func (tx *Transaction) Hash() types.Hash {
-	if !tx.hash.IsZero() {
-		return tx.hash
-	}
+// calculate hash of transactions
+func (tx Transaction) Hash() types.Hash {
 	buf := &bytes.Buffer{}
 	// NewEncoder returns a new encoder that will transmit on the io.Writer.
 	enc := gob.NewEncoder(buf)
@@ -56,16 +66,15 @@ func (tx *Transaction) Hash() types.Hash {
 	err := enc.Encode(tx)
 	// Passing a nil pointer to Encoder will panic, as they cannot be transmitted by gob.
 	if err != nil {
+		fmt.Println("error in hashing transaction:", err)
 		panic(err)
 	}
 
 	h := sha256.Sum256(buf.Bytes())
-	tx.hash = h
 	return types.Hash(h)
-
 }
 
-func (tx *Transaction) sign(privkey *crypto.PrivateKey) error {
+func (tx *Transaction) Sign(privkey *crypto.PrivateKey) error {
 	signature, err := privkey.SignMessage(tx.data)
 	if err != nil {
 		fmt.Println("unable to sign block with private key")
@@ -88,7 +97,7 @@ func (tx *Transaction) Verify() error {
 	return nil
 }
 
-func CalculateMerkleRoot(txs []Transaction) string {
+func CalculateMerkleRoot(txs []*Transaction) string {
 	// Convert the transactions to their hash representation
 	hashes := make([]string, len(txs))
 	for i, tx := range txs {
@@ -136,20 +145,20 @@ func StringToHash(hashString string) (types.Hash, error) {
 	return hash, nil
 }
 
-func (tx *Transaction) SetFirstSeen(t int64){
-	tx.firstSeen=t
+func (tx *Transaction) SetFirstSeen(t int64) {
+	tx.firstSeen = t
 }
 
-func (tx *Transaction) FirstSeen() int64{
+func (tx *Transaction) FirstSeen() int64 {
 	return tx.firstSeen
 }
 
 // enoding Transaction
-func (tx *Transaction) Encode(enc Encoder[*Transaction]) error{
+func (tx *Transaction) Encode(enc Encoder[*Transaction]) error {
 	return enc.Encode(tx)
 }
 
-//decoding transaction  
-func (tx *Transaction) Decode(dec Decoder[*Transaction]) error{
+//decoding transaction
+func (tx *Transaction) Decode(dec Decoder[*Transaction]) error {
 	return dec.Decode(tx)
 }

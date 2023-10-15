@@ -34,7 +34,7 @@ func GeneratePrivatekey() PrivateKey {
 }
 
 // / Step 2: Make public key from private key
-func (p PrivateKey) GeneratePublicKey() PublicKey {
+func (p *PrivateKey) GeneratePublicKey() PublicKey {
 
 	return PublicKey{
 		key: &p.key.PublicKey,
@@ -46,7 +46,7 @@ func (k *PublicKey) ToSlice() []byte {
 	return elliptic.MarshalCompressed(k.key, k.key.X, k.key.Y)
 }
 
-func (k *PublicKey) address() types.Address {
+func (k *PublicKey) Address() types.Address {
 	hash := sha256.Sum256(k.ToSlice())
 	return types.AddressFromByte(hash[len(hash)-20:])
 }

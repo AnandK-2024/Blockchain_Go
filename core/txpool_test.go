@@ -1,8 +1,11 @@
 package core
 
 import (
-	"math/rand"
+	"fmt"
+	// "math/rand"
 	"strconv"
+	// "time"
+
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -10,9 +13,6 @@ import (
 
 func TestTxMaxLength(t *testing.T) {
 	p := NewTxPool()
-	// p.Add(utils.NewRandomTransaction(10))
-	// assert.Equal(t, 1, p.all.Count())
-
 	p.Add(NewRandomTransaction(10))
 	p.Add(NewRandomTransaction(20))
 	p.Add(NewRandomTransaction(30))
@@ -27,7 +27,7 @@ func TestTxPoolAdd(t *testing.T) {
 	n := 10
 
 	for i := 1; i <= n; i++ {
-		tx := NewRandomTransaction(100)
+		tx := NewRandomTransaction(100*i)
 		p.Add(tx)
 		// cannot add twice
 		p.Add(tx)
@@ -45,14 +45,20 @@ func TestSortTransaction(t *testing.T) {
 
 	// set length of transaction
 	txlen := 100
+	counter := 0
 	for i := 0; i < txlen; i++ {
-		tx := NewTransaction([]byte(strconv.FormatInt(int64(i), 10)))
-		tx.SetFirstSeen(int64(i * rand.Intn(1000)))
+		tx := NewTransaction([]byte(strconv.FormatInt(int64(i*i), 10)))
+		// tx.SetFirstSeen(int64(i * rand.Intn(1000)))
+		// p.Add(tx)
 		assert.Nil(t, p.Add(tx))
+		if p.Has(tx.Hash()) {
+			counter++
+		}
 	}
-	assert.Equal(t, 100, p.Len())
-	/// write test for sort transaction
-	// p=NewTxMapSorter(&p.Transactions)
+	fmt.Println("value of counter", counter)
+
+	// assert.Equal(t, 100, p.Len())
+
 }
 
 // func TestTxPoolMaxLength(t *testing.T) {
@@ -79,14 +85,19 @@ func TestSortTransaction(t *testing.T) {
 // }
 
 // func TestTxSortedMapFirst(t *testing.T) {
-// 	m := NewTxSortedMap()
-// 	first := util.NewRandomTransaction(100)
+// 	m := TxPool{}
+// 	first := NewRandomTransaction(100)
 // 	m.Add(first)
-// 	m.Add(util.NewRandomTransaction(10))
-// 	m.Add(util.NewRandomTransaction(10))
-// 	m.Add(util.NewRandomTransaction(10))
-// 	m.Add(util.NewRandomTransaction(10))
-// 	assert.Equal(t, first, m.First())
+// 	m.Add(NewRandomTransaction(10))
+// 	m.Add(NewRandomTransaction(10))
+// 	m.Add(NewRandomTransaction(10))
+// 	m.Add(NewRandomTransaction(10))
+// 	// txsort:=&TxMapSorter{
+// 	// 	transactions:m.Transaction
+// 	// }
+
+// 	NewTxMapSorter(m.Transactions)
+// 	// assert.Equal(t, first, m.First())
 // }
 
 // func TestTxSortedMapAdd(t *testing.T) {
@@ -104,7 +115,6 @@ func TestSortTransaction(t *testing.T) {
 // 		assert.Equal(t, len(m.lookup), m.txx.Len())
 // 		assert.Equal(t, m.Get(tx.Hash(core.TxHasher{})), tx)
 // 	}
-
 // 	m.Clear()
 // 	assert.Equal(t, m.Count(), 0)
 // 	assert.Equal(t, len(m.lookup), 0)

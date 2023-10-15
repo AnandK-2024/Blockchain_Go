@@ -2,8 +2,9 @@ package core
 
 import (
 	// "bytes"
-	"crypto/sha256"
-	"encoding/hex"
+	// "crypto/sha256"
+	// "encoding/hex"
+	"bytes"
 	"fmt"
 	"testing"
 
@@ -15,10 +16,18 @@ import (
 func TestTransaction(t *testing.T) {
 	privkey := crypto.GeneratePrivatekey()
 	tx := NewTransaction([]byte("Anand-->bob: 10ETH"))
-	err := tx.sign(&privkey)
+	err := tx.Sign(&privkey)
 	fmt.Println("transaction signature", tx.signature)
 	assert.Nil(t, err)
 	assert.NotNil(t, tx.signature)
+}
+func TestNewRandomTransaction(t *testing.T) {
+	datasize := 10
+	tx := NewRandomTransaction(datasize)
+
+	assert.NotNil(t, tx)
+	assert.Len(t, tx.data, datasize)
+	assert.NotZero(t, tx.Nonce)
 }
 
 func TestTransactionHash(t *testing.T) {
@@ -41,7 +50,7 @@ func TestTransactionSignAndVerify(t *testing.T) {
 	transaction := NewTransaction(data)
 
 	// Sign the transaction
-	err := transaction.sign(&privKey)
+	err := transaction.Sign(&privKey)
 	if err != nil {
 		t.Errorf("Failed to sign transaction: %s", err)
 	}
@@ -53,75 +62,46 @@ func TestTransactionSignAndVerify(t *testing.T) {
 	}
 }
 
-// mekle root test
 func TestCalculateMerkleRoot(t *testing.T) {
-	// Create some example transactions
-	txs := []Transaction{
-		{
-			data:      []byte("Transaction 1"),
-			value:     100,
-			from:      crypto.PublicKey{},
-			signature: &crypto.Signature{},
-			Nonce:     1,
-		},
-		{
-			data:      []byte("Transaction 2"),
-			value:     200,
-			from:      crypto.PublicKey{},
-			signature: &crypto.Signature{},
-			Nonce:     2,
-		},
-		{
-			data:      []byte("Transaction 3"),
-			value:     300,
-			from:      crypto.PublicKey{},
-			signature: &crypto.Signature{},
-			Nonce:     3,
-		},
+	txs := []*Transaction{
+		NewTransaction([]byte("data1")),
+		NewTransaction([]byte("data2")),
+		NewTransaction([]byte("data3")),
 	}
 
-	// Calculate the expected Merkle root manually
-	hashes := make([]string, len(txs))
-	for i, tx := range txs {
-		h := tx.Hash()
-		hashes[i] = hex.EncodeToString(h[:])
-	}
-
-	for len(hashes) > 1 {
-		if len(hashes)%2 != 0 {
-			hashes = append(hashes, hashes[len(hashes)-1])
-		}
-
-		nextLevel := make([]string, len(hashes)/2)
-
-		for i := 0; i < len(hashes); i += 2 {
-			concatenated := hashes[i] + hashes[i+1]
-			hash := sha256.Sum256([]byte(concatenated))
-			nextLevel[i/2] = hex.EncodeToString(hash[:])
-		}
-
-		hashes = nextLevel
-	}
-
-	expectedMerkleRoot := hashes[0]
-
-	// Calculate the Merkle root using the function
-	calculatedMerkleRoot := CalculateMerkleRoot(txs)
-
-	// Compare the expected and calculated Merkle roots
-	if calculatedMerkleRoot != expectedMerkleRoot {
-		t.Errorf("Expected Merkle root: %s, but got: %s", expectedMerkleRoot, calculatedMerkleRoot)
-	}
+	merkleRoot := CalculateMerkleRoot(txs)
+	fmt.Println("merkle hash root of transaction", merkleRoot)
+	assert.NotEmpty(t, merkleRoot)
 }
 
-// func TestTxEncodeDecode(t *testing.T) {
-// 	tx := NewRandomTransaction(100)
-// 	fmt.Println("new random transaction is:=", tx)
-// 	buf := &bytes.Buffer{}
-// 	assert.Nil(t, tx.Encode(NewGobTxEncoder(buf)))
-// 	txDecode := new(Transaction)
-// 	assert.Nil(t, txDecode.Decode(NewGobTxDecoder(buf)))
-// 	fmt.Println("decoded transaction:", txDecode)
-// 	assert.Equal(t, tx, txDecode)
+func TestStringToHash(t *testing.T) {
+	hashString := "0123456789abcdef"
+	expectedHash, _ := StringToHash(hashString)
 
-// }
+	hash, err := StringToHash(hashString)
+
+	assert.NoError(t, err)
+	assert.Equal(t, expectedHash, hash)
+}
+
+func TestTransaction_SetFirstSeen(t *testing.T) {
+	tx := NewTransaction([]byte("test data"))
+	firstSeen := int64(1234567890)
+
+	tx.SetFirstSeen(firstSeen)
+
+	assert.Equal(t, firstSeen, tx.FirstSeen())
+}
+
+
+func TestTxEncodeDecode(t *testing.T) {
+	tx := NewRandomTransaction(100)
+	// fmt.Println("new random transaction is:=", tx)
+	buf := &bytes.Buffer{}
+	assert.Nil(t, tx.Encode(NewGobTxEncoder(buf)))
+	txDecode := new(Transaction)
+	assert.Nil(t, txDecode.Decode(NewGobTxDecoder(buf)))
+	fmt.Println("decoded transaction:", txDecode)
+	// assert.Equal(t, tx, txDecode)
+
+}

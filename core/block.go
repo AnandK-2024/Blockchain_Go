@@ -23,7 +23,7 @@ type Header struct {
 
 type Block struct {
 	*Header      // don't work with copy of header , so taking pointer make much more efficient
-	Transactions []Transaction
+	Transactions []*Transaction
 	// public key of block validator
 	validator crypto.PublicKey
 	// signature of block validator
@@ -42,28 +42,29 @@ func (h *Header) Bytes() []byte {
 }
 
 // create new block with header and array of transaction
-func NewBlock(h *Header, txs []Transaction) *Block {
+func NewBlock(h *Header, txs []*Transaction) *Block {
 	return &Block{
 		Header:       h,
 		Transactions: txs,
 	}
+
 }
 
 // create new block with previous header and transactions
-func NewBlockFromPrevHeader(prevHeader Header,txs [] Transaction) (*Block,error){
-	merklerootstring:=CalculateMerkleRoot(txs)
-	merkleroothash,err:=StringToHash(merklerootstring)
+func NewBlockFromPrevHeader(prevHeader Header, txs []*Transaction) (*Block, error) {
+	merklerootstring := CalculateMerkleRoot(txs)
+	merkleroothash, err := StringToHash(merklerootstring)
 	if err != nil {
 		return nil, fmt.Errorf("error in converting string to merklehash")
 	}
-	header:=&Header{
-		version: 1,
-		prevblockHash:prevHeader.prevblockHash ,
-		DataHash: merkleroothash,
-		Timestamp: time.Now().UnixNano(),
-		Height: prevHeader.Height,
+	header := &Header{
+		version:       1,
+		prevblockHash: prevHeader.prevblockHash,
+		DataHash:      merkleroothash,
+		Timestamp:     time.Now().UnixNano(),
+		Height:        prevHeader.Height,
 	}
-	return NewBlock(header,txs),nil
+	return NewBlock(header, txs), nil
 
 }
 
@@ -82,16 +83,16 @@ func (b *Block) CalculateMerkleRoot() error {
 }
 
 // add transaction in block
-func(b *Block) AddTransaction(tx Transaction){
-	b.Transactions=append(b.Transactions, tx)
+func (b *Block) AddTransaction(tx *Transaction) {
+	b.Transactions = append(b.Transactions, tx)
 	b.CalculateMerkleRoot()
 
 }
 
 // add transactions in block
-func (b *Block) AddTransactions(txs []Transaction){
-	for i:=0;i<len(txs);i++{
-		b.Transactions=append(b.Transactions, txs[i])
+func (b *Block) AddTransactions(txs []*Transaction) {
+	for i := 0; i < len(txs); i++ {
+		b.Transactions = append(b.Transactions, txs[i])
 	}
 	b.CalculateMerkleRoot()
 }
@@ -113,7 +114,7 @@ func (b *Block) Hash() types.Hash {
 	return types.Hash(h)
 }
 
-// validator will sign the block
+// validator or miner will sign the block
 func (b *Block) Sign(privkey *crypto.PrivateKey) error {
 	hash := b.Hash()
 	signature, err := privkey.SignMessage(hash[:])
@@ -122,9 +123,7 @@ func (b *Block) Sign(privkey *crypto.PrivateKey) error {
 		panic(err)
 	}
 	b.validator = privkey.GeneratePublicKey()
-	b.hash = hash
 	b.signature = signature
-
 	return nil
 }
 
@@ -152,13 +151,12 @@ func (b *Block) Verify() error {
 
 // validator can validate the block before voting / finalization
 
-
 // enoding block
 func (b *Block) Encode(enc Encoder[*Block]) error {
 	return enc.Encode(b)
 }
 
-//decoding block
+// decoding block
 func (b *Block) Decode(dec Decoder[*Block]) error {
 	return dec.Decode(b)
 }

@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	ErrorAccountFound        = errors.New("account not found")
+	ErrorAccountNotFound        = errors.New("account not found")
 	ErrorInsufficientBalance = errors.New("insufficient  account balance")
 )
 
@@ -40,11 +40,12 @@ func NewAccountState() *AccountState {
 func (s *AccountState) CreateAccount(address types.Address) *Account {
 	s.lock.Lock()
 	defer s.lock.Unlock()
-	acc := &Account{address: address,balance: 0}
+	acc := &Account{address: address, balance: 0}
 	s.account[address] = acc
 	return acc
 }
 
+// get account details with address
 func (s *AccountState) GetAccount(address types.Address) (*Account, error) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -54,22 +55,24 @@ func (s *AccountState) GetAccount(address types.Address) (*Account, error) {
 func (s *AccountState) getAccountWithoutLock(address types.Address) (*Account, error) {
 	account, ok := s.account[address]
 	if !ok {
-		return nil, ErrorAccountFound
+		return nil, ErrorAccountNotFound
 	}
 	return account, nil
 }
 
+// get balance of accout with address
 func (s *AccountState) GetBalance(address types.Address) (uint64, error) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	account, ok := s.getAccountWithoutLock(address)
 	if ok != nil {
-		return 0, ErrorAccountFound
+		return 0, ErrorAccountNotFound
 	}
 	return account.balance, nil
 
 }
 
+// transfer crypto from one account to another account
 func (s *AccountState) Transfer(from types.Address, to types.Address, amount uint64) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -79,24 +82,23 @@ func (s *AccountState) Transfer(from types.Address, to types.Address, amount uin
 	if err != nil {
 		return err
 	}
-	
-	if sender.balance<amount{
+
+	if sender.balance < amount {
 		return ErrorInsufficientBalance
 	}
-	if sender.balance!=0{
-		sender.balance-=amount
+	if sender.balance != 0 {
+		sender.balance -= amount
 	}
-	
+
 	// get account of reciever
-	reciever,err:=s.getAccountWithoutLock(to)
-	if err!=nil{
+	reciever, err := s.getAccountWithoutLock(to)
+	if err != nil {
 		// if account not found then create a new account for reciever
 		s.CreateAccount(to)
 		// get account for reciever
-		reciever,_=s.getAccountWithoutLock(to)
+		reciever, _ = s.getAccountWithoutLock(to)
 	}
-	reciever.balance+=amount
+	reciever.balance += amount
 	return nil
-	
 
 }
