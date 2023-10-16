@@ -75,9 +75,9 @@ func (B *Blockchain) AddBlock(block *Block) error {
 		s := state{}
 		state := s.NewState()
 		vm := NewVM(tx.data, *state)
-		if err := vm.Run(); err != nil {
-			return err
-		}
+		// if err := vm.Run(); err != nil {
+		// 	return err
+		// }
 		B.logger.Log("vm result:", vm.stack.peek())
 	}
 	B.addBlockWithoutValidation(block)

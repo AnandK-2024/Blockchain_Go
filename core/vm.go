@@ -2,6 +2,7 @@ package core
 
 import (
 	"encoding/binary"
+	"fmt"
 )
 
 type VM struct {
@@ -26,7 +27,6 @@ func (vm *VM) Run() error {
 		if err := vm.execute(opcode); err != nil {
 			return err
 		}
-		vm.ip++
 		if vm.ip > len(vm.data)-1 {
 			break
 		}
@@ -37,34 +37,50 @@ func (vm *VM) Run() error {
 func (vm *VM) execute(opcode OpCode) error {
 	switch opcode {
 	case Store:
+		fmt.Println("store opcode called")
+
 		var (
-			key             = vm.stack.Pop().([]byte)
-			value           = vm.stack.Pop()
-			serializedValue []byte
+			key            = vm.stack.Pop().([]byte)
+			value          = vm.stack.Pop()
+			serializevalue []byte
 		)
-		switch val := value.(type) {
+		switch v := value.(type) {
 		case int:
-			serializedValue = serializeInt64(int64(val))
+			serializevalue = serializeInt64(int64(v))
 		default:
-			panic("TODO:Unknown type")
-
-			vm.contractState.Put(key, serializedValue)
-
+			panic("TODO: unknown type")
 		}
+		vm.contractState.Put(key, serializevalue)
+
+		vm.ip = vm.ip + 1
 	case PushInt:
+		fmt.Println("push int opcode called")
 		vm.stack.Push(int(vm.data[vm.ip+1]))
-		// vm.ip++
+		vm.ip = vm.ip + 2
 	case PushByte:
+		fmt.Println("push byte opcode called")
 		vm.stack.Push(byte(vm.data[vm.ip+1]))
-		// vm.ip++
+		vm.ip = vm.ip + 2
 	case ADD:
+		fmt.Println("Add opcode called")
 		a := vm.stack.Pop().(int)
 		b := vm.stack.Pop().(int)
 		vm.stack.Push(int(a + b))
+		vm.ip = vm.ip + 1
 	case SUB:
+		fmt.Println("Sub opcode called")
 		a := vm.stack.Pop().(int)
 		b := vm.stack.Pop().(int)
-		vm.stack.Push(int(a - b))
+		vm.stack.Push(int(b - a))
+		vm.ip = vm.ip + 1
+	case MUL:
+		fmt.Println("MUL opcode called")
+		a := vm.stack.Pop().(int)
+		b := vm.stack.Pop().(int)
+		vm.stack.Push(int(b * a))
+		vm.ip = vm.ip + 1
+	default:
+		fmt.Println("opcode called in default:", opcode)
 
 	}
 	return nil
