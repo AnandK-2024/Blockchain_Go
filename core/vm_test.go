@@ -9,8 +9,7 @@ import (
 
 func TestVM(t *testing.T) {
 	data := []byte{0x0, 0x05, 0x0, 0xa, 0x1, 0x0, 0xb, 0x3, 0x0, 0xf, 0x2, 0x0, 0x5}
-	s := state{}
-	contractState := s.NewState()
+	contractState := NewState()
 	vm := NewVM(data, *contractState)
 	assert.Nil(t, vm.Run())
 	fmt.Println("vm result after execution:", vm.stack.peek())

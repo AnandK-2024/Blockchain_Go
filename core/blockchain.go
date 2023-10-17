@@ -30,6 +30,9 @@ type Blockchain struct {
 
 	// validator
 	validator validator
+
+	// contract state: store state of smart contract
+	ContractState *state
 }
 
 // create new blockchain with genesis block
@@ -38,12 +41,13 @@ func NewBlockchian(l log.Logger, genesis *Block, CoinbaseAddr types.Address) (*B
 	account.CreateAccount(CoinbaseAddr)
 
 	bc := &Blockchain{
-		headers:      []*Header{},
-		blocks:       []*Block{},
-		logger:       l,
-		blockStore:   make(map[types.Hash]*Block),
-		txStore:      make(map[types.Hash]*Transaction),
-		accountState: account,
+		headers:       []*Header{},
+		blocks:        []*Block{},
+		logger:        l,
+		blockStore:    make(map[types.Hash]*Block),
+		txStore:       make(map[types.Hash]*Transaction),
+		accountState:  account,
+		ContractState: NewState(),
 	}
 
 	bc.validator = NewBlockValidator(bc)
@@ -72,8 +76,7 @@ func (B *Blockchain) AddBlock(block *Block) error {
 	}
 	for _, tx := range block.Transactions {
 		B.logger.Log("msg", "execution code", "len", len(tx.data), "hash", tx.Hash())
-		s := state{}
-		state := s.NewState()
+		state := NewState()
 		vm := NewVM(tx.data, *state)
 		// if err := vm.Run(); err != nil {
 		// 	return err

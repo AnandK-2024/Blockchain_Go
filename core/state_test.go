@@ -7,8 +7,8 @@ import (
 )
 
 func TestState(t *testing.T) {
-	s := state{}
-	state := s.NewState()
+
+	state := NewState()
 
 	// Test Put function
 	err := state.Put([]byte("key1"), []byte("value1"))

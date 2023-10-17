@@ -4,88 +4,136 @@ import (
 	// "fmt"
 
 	// "fmt"
-	"sort"
+
+	"fmt"
+	"sync"
 
 	"github.com/AnandK-2024/Blockchain/types"
 )
 
-// to sort transactions in mempool
-type TxMapSorter struct {
-	transactions []*Transaction
-}
-
-// Len implements sort.Interface.
-func (s *TxMapSorter) Len() int {
-	return len(s.transactions)
-}
-
-// Less implements sort.Interface.
-func (s *TxMapSorter) Less(i int, j int) bool {
-	return s.transactions[i].firstSeen < s.transactions[j].firstSeen
-}
-
-// Swap implements sort.Interface.
-func (s *TxMapSorter) Swap(i int, j int) {
-	s.transactions[i], s.transactions[j] = s.transactions[j], s.transactions[i]
-}
-
 type TxPool struct {
-	Transactions map[types.Hash]*Transaction
-}
-
-// sort depends on time not on validator fee
-func NewTxMapSorter(txMap map[types.Hash]*Transaction) *TxMapSorter {
-	Txs := make([]*Transaction, len(txMap))
-	i := 0
-	for _, tx := range txMap {
-		Txs[i] = tx
-		i++
-	}
-	s := &TxMapSorter{Txs}
-	sort.Sort(s)
-	return s
-
+	// repersent all transaction in tx pool
+	all *TxMapSorter
+	// pending repersent pending transaction in tx pool
+	pending *TxMapSorter
+	// maxLength repersent max length capacity of pool handle transaction
+	maxLength int
 }
 
 // create new transaction pool
-func NewTxPool() *TxPool {
+func NewTxPool(maxLength int) *TxPool {
 	return &TxPool{
-		Transactions: make(map[types.Hash]*Transaction),
+		all:       newTxMapSorter(),
+		pending:   newTxMapSorter(),
+		maxLength: maxLength,
 	}
-
 }
 
-// add transaction to txpool
-func (txp *TxPool) Add(tx *Transaction) error {
+// add transaction in tx pool
+func (txp *TxPool) Add(tx *Transaction) {
+
+	// first remove the oldest transaction from pending pool
+	if txp.pending.count() == txp.maxLength {
+		oldesttx := txp.pending.first()
+		txp.pending.remove(oldesttx.Hash())
+	}
+	// check tx are already exist or not
+	if ok := txp.pending.Contain(tx.Hash()); !ok {
+		txp.pending.add(tx)
+		txp.all.add(tx)
+	}
+}
+
+// check transaction or avilable or not in tx pool
+func (txp *TxPool) Contain(hash types.Hash) bool {
+	return txp.all.Contain(hash)
+}
+
+// get all pending transactions
+func (txp *TxPool) Pending() []*Transaction {
+	return txp.pending.TxList.Data
+}
+
+// count all pending transaction
+func (txp *TxPool) PendingCount() int {
+	return txp.pending.count()
+}
+
+// clear all pending transaction
+func (txp *TxPool) ClearPending() {
+	txp.pending.clear()
+}
+
+// to sort transactions in mempool
+type TxMapSorter struct {
+	lock         sync.RWMutex
+	transactions map[types.Hash]*Transaction
+	TxList       *types.List[*Transaction]
+}
+
+func newTxMapSorter() *TxMapSorter {
+	return &TxMapSorter{
+		lock:         sync.RWMutex{},
+		transactions: make(map[types.Hash]*Transaction),
+		TxList:       types.NewList[*Transaction](),
+	}
+}
+
+// get first transaction
+func (s *TxMapSorter) first() *Transaction {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+	return s.TxList.Get(0)
+}
+
+func (s *TxMapSorter) add(tx *Transaction) {
 	hash := tx.Hash()
-	if txp.Has(hash) {
-		return nil
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	_, ok := s.transactions[hash]
+	if !ok {
+		s.transactions[hash] = tx
+		s.TxList.Insert(tx)
 	}
-	txp.Transactions[hash] = tx
-	return nil
-
 }
 
-// check tx is excited or not by hash
-func (txp *TxPool) Has(hash types.Hash) bool {
-	_, ok := txp.Transactions[hash]
-	return ok
-
+func (s *TxMapSorter) get(hash types.Hash) (*Transaction, error) {
+	tx, ok := s.transactions[hash]
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+	if !ok {
+		fmt.Errorf("transaction not found for given %d hash:", hash)
+	}
+	return tx, nil
 }
 
-// check the length of tx pool
-func (txp *TxPool) Len() int {
-	return len(txp.Transactions)
-
+func (s *TxMapSorter) remove(hash types.Hash) {
+	tx, ok := s.transactions[hash]
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	if ok {
+		delete(s.transactions, hash)
+		index := s.TxList.GetIndex(tx)
+		s.TxList.Pop(index)
+	}
 }
 
-// flush the transaction pool
-func (txp *TxPool) Flush() {
-	txp.Transactions = make(map[types.Hash]*Transaction)
+func (s *TxMapSorter) count() int {
+	return s.TxList.Len()
 }
 
-// return all transactions of pool
-func (txp *TxPool) Transaction() []*Transaction {
-	sortertxs := NewTxMapSorter(txp.Transactions)
-	return sortertxs.transactions
+func (s *TxMapSorter) Contain(hash types.Hash) bool {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+	if _, ok := s.transactions[hash]; ok {
+		return true
+	}
+	return false
+}
+
+func (s *TxMapSorter) clear() {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	s.transactions = make(map[types.Hash]*Transaction)
+	s.TxList.Clear()
 }

@@ -8,7 +8,7 @@ type state struct {
 }
 
 // create new state
-func (s *state) NewState() *state {
+func  NewState() *state {
 	return &state{
 		data: map[string][]byte{},
 	}
