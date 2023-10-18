@@ -55,5 +55,8 @@ func TestSendMessage(t *testing.T) {
 	fmt.Println(trb)
 	fmt.Println(rpc)
 	assert.Equal(t, tra.Addr(), rpc.from)
-	assert.Equal(t, payload, rpc.payload)
+	reader := rpc.payload
+	actual := make([]byte, len(payload))
+	_, _ = reader.Read(actual)
+	assert.Equal(t, payload, actual)
 }

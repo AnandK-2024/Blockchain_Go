@@ -30,7 +30,7 @@ func Newserver(opts serveropts) *server {
 	return &server{
 		serveropts:  opts,
 		blockTime:   opts.blockTime,
-		mempool:     core.NewTxPool(),
+		mempool:     core.NewTxPool(100),
 		isValidator: opts.privatekey != nil,
 		rpcCh:       make(chan RPC),
 		quitCh:      make(chan struct{}, 1),
@@ -45,9 +45,7 @@ func (s *server) HandleTransaction(tx *core.Transaction) error {
 		"hash": tx.Hash(),
 	}).Info("adding new transaction to mempool")
 
-	if err := s.mempool.Add(tx); err != nil {
-		return err
-	}
+	s.mempool.Add(tx)
 	fmt.Println("transaction added in mempool")
 
 	return nil
@@ -87,7 +85,7 @@ free:
 }
 
 func (s *server) CreateNewBlock() {
-	
+
 	fmt.Println("creating new block ....")
 }
 
