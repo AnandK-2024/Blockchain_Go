@@ -59,4 +59,15 @@ func TestSendMessage(t *testing.T) {
 	actual := make([]byte, len(payload))
 	_, _ = reader.Read(actual)
 	assert.Equal(t, payload, actual)
+	// Create a TCP address serverB
+	tcpAddrc := &net.TCPAddr{
+		IP:   net.ParseIP("10.0.1.1"),
+		Port: 8075,
+	}
+	trc := NewLocaltransport(tcpAddrc)
+	trb.connect(trc)
+	// test broadcast
+	err = trb.Broadcast(payload)
+	assert.Nil(t, err)
+
 }
