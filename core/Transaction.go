@@ -46,9 +46,20 @@ step4: verifier can verify transaction
 
 func NewTransaction(data []byte) *Transaction {
 	return &Transaction{
-		data:  data,
-		Nonce: uint64(rand.Int63n(100)),
-		firstSeen:int64(time.Now().UnixNano()),
+		data:      data,
+		Nonce:     uint64(rand.Int63n(100)),
+		firstSeen: int64(time.Now().UnixNano()),
+	}
+}
+
+// new complete transaction
+func NewCompleteTx(to crypto.PublicKey, value uint64, data []byte, nonce uint64) *Transaction {
+	return &Transaction{
+		data:      data,
+		value:     value,
+		to:        to,
+		Nonce:     nonce,
+		firstSeen: time.Now().Unix(),
 	}
 }
 
@@ -98,6 +109,10 @@ func (tx *Transaction) Verify() error {
 }
 
 func CalculateMerkleRoot(txs []*Transaction) string {
+	// if there are no any transactions
+	if len(txs) == 0 {
+		return ""
+	}
 	// Convert the transactions to their hash representation
 	hashes := make([]string, len(txs))
 	for i, tx := range txs {
@@ -158,7 +173,7 @@ func (tx *Transaction) Encode(enc Encoder[*Transaction]) error {
 	return enc.Encode(tx)
 }
 
-//decoding transaction
+// decoding transaction
 func (tx *Transaction) Decode(dec Decoder[*Transaction]) error {
 	return dec.Decode(tx)
 }

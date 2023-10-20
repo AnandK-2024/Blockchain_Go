@@ -14,7 +14,7 @@ import (
 
 func RandomBlock(height uint32) *Block {
 	header := &Header{
-		version:       1,
+		Version:       1,
 		prevblockHash: types.Randomhash(),
 		DataHash:      types.Randomhash(),
 		Timestamp:     time.Now().UnixNano(),
@@ -28,7 +28,7 @@ func RandomBlock(height uint32) *Block {
 
 func randomBlock(t *testing.T, height uint32, prevhash types.Hash) *Block {
 	header := &Header{
-		version:       1,
+		Version:       1,
 		prevblockHash: prevhash,
 		DataHash:      types.Randomhash(),
 		Timestamp:     time.Now().UnixNano(),
@@ -73,7 +73,7 @@ func TestBlockHash(t *testing.T) {
 	// Create a sample block
 	block := &Block{
 		Header: &Header{
-			version:       1,
+			Version:       1,
 			prevblockHash: types.Hash{},
 			DataHash:      types.Hash{},
 			Timestamp:     0,
@@ -94,7 +94,7 @@ func TestBlockAddTransaction(t *testing.T) {
 	// Create a sample block
 	block := &Block{
 		Header: &Header{
-			version:       1,
+			Version:       1,
 			prevblockHash: types.Hash{},
 			DataHash:      types.Hash{},
 			Timestamp:     0,

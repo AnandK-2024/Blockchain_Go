@@ -101,8 +101,23 @@ func (B *Blockchain) HasBlock(height uint32) bool {
 // add block without validation
 func (B *Blockchain) addBlockWithoutValidation(b *Block) error {
 
+	// add header in blockchain
 	B.headers = append(B.headers, b.Header)
+	// add blocks in blockchain
 	B.blocks = append(B.blocks, b)
+	// map blockhash with block
+	B.blockStore[b.hash] = b
+	// add transactions into blockchain
+	for _, tx := range b.Transactions {
+		B.txStore[tx.Hash()] = tx
+	}
+
+	B.logger.Log(
+		"msg", "new block",
+		"hash", b.Hash(),
+		"height", b.Height,
+		"transactions", len(b.Transactions),
+	)
 	return nil
 }
 
@@ -117,6 +132,7 @@ func (B *Blockchain) GetHeader(height uint32) (*Header, error) {
 	if height > B.Height() {
 		return nil, fmt.Errorf("given height %d is too high ", height)
 	}
+	// RLock(), it allows multiple readers to access a shared resource simultaneously, as long as no writer has acquired the write lock
 	B.lock.RLock()
 	defer B.lock.RUnlock()
 	return B.headers[height], nil

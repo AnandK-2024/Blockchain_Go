@@ -12,7 +12,7 @@ import (
 )
 
 type Header struct {
-	version uint32
+	Version uint32
 	// hash of previous block header
 	prevblockHash types.Hash
 	// hash of transactions(merkle root)
@@ -58,11 +58,11 @@ func NewBlockFromPrevHeader(prevHeader Header, txs []*Transaction) (*Block, erro
 		return nil, fmt.Errorf("error in converting string to merklehash")
 	}
 	header := &Header{
-		version:       1,
-		prevblockHash: prevHeader.prevblockHash,
+		Version:       1,
+		prevblockHash: CalculateHash(prevHeader),
 		DataHash:      merkleroothash,
 		Timestamp:     time.Now().UnixNano(),
-		Height:        prevHeader.Height,
+		Height:        prevHeader.Height + 1,
 	}
 	return NewBlock(header, txs), nil
 
@@ -71,7 +71,7 @@ func NewBlockFromPrevHeader(prevHeader Header, txs []*Transaction) (*Block, erro
 // calculate data hash as merkle tree hash root of transaction
 func (b *Block) CalculateMerkleRoot() error {
 	if len(b.Transactions) == 0 {
-		return fmt.Errorf("No transaction avilable!! Add transactions into block")
+		return fmt.Errorf("no transaction avilable!! Add transactions into block")
 	}
 	merklestring := CalculateMerkleRoot(b.Transactions)
 	merkleHashRoot, err := StringToHash(merklestring)
@@ -97,6 +97,23 @@ func (b *Block) AddTransactions(txs []*Transaction) {
 	b.CalculateMerkleRoot()
 }
 
+// calculate hash for any data
+func CalculateHash(data any) types.Hash{
+	buf := &bytes.Buffer{}
+	// NewEncoder returns a new encoder that will transmit on the io.Writer.
+	enc := gob.NewEncoder(buf)
+	// Encode transmits the data item represented by the empty interface value,
+	// guaranteeing that all necessary type information has been transmitted first.
+	err := enc.Encode(data)
+	// Passing a nil pointer to Encoder will panic, as they cannot be transmitted by gob.
+	if err != nil {
+		panic(err)
+	}
+
+	h := sha256.Sum256(buf.Bytes())
+	return types.Hash(h)
+}
+
 // calculate hash of block
 func (b *Block) Hash() types.Hash {
 	buf := &bytes.Buffer{}
@@ -112,6 +129,11 @@ func (b *Block) Hash() types.Hash {
 
 	h := sha256.Sum256(buf.Bytes())
 	return types.Hash(h)
+}
+
+// calculate and set block hash
+func (b *Block) SetHash() {
+	b.hash = b.Hash()
 }
 
 // validator or miner will sign the block
