@@ -81,6 +81,7 @@ func (vm *VM) execute(opcode OpCode) error {
 		vm.ip = vm.ip + 1
 	default:
 		fmt.Println("opcode called in default:", opcode)
+		break
 
 	}
 	return nil

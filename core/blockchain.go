@@ -1,6 +1,7 @@
 package core
 
 import (
+	"encoding/hex"
 	"fmt"
 	"sync"
 	"time"
@@ -78,9 +79,9 @@ func (B *Blockchain) AddBlock(block *Block) error {
 		B.logger.Log("msg", "execution code", "len", len(tx.data), "hash", tx.Hash())
 		state := NewState()
 		vm := NewVM(tx.data, *state)
-		// if err := vm.Run(); err != nil {
-		// 	return err
-		// }
+		if err := vm.Run(); err != nil {
+			return err
+		}
 		B.logger.Log("vm result:", vm.stack.peek())
 	}
 	B.addBlockWithoutValidation(block)
@@ -111,10 +112,10 @@ func (B *Blockchain) addBlockWithoutValidation(b *Block) error {
 	for _, tx := range b.Transactions {
 		B.txStore[tx.Hash()] = tx
 	}
-
+	hash := b.Hash()
 	B.logger.Log(
 		"msg", "new block",
-		"hash", b.Hash(),
+		"hash", hex.EncodeToString(hash[:]),
 		"height", b.Height,
 		"transactions", len(b.Transactions),
 	)
@@ -170,7 +171,7 @@ func (b *Blockchain) GetTxByHash(hash types.Hash) (*Transaction, error) {
 
 // check validation of the block before finalize by verifier
 func (B *Blockchain) ValidateBlock(b *Block) error {
-	fmt.Println("validation of block is starting................")
+	// fmt.Println("validation of block is starting................")
 	// validate block height
 	if B.HasBlock(b.Height) {
 		return fmt.Errorf("Blockchian already contain block %d", b.Height)
@@ -202,7 +203,7 @@ func (B *Blockchain) ValidateBlock(b *Block) error {
 	// validate timestamp of block
 	// should be less than current time
 
-	if Time := b.Header.Timestamp; Time > int64(time.Now().UnixMicro()) {
+	if b.Header.Timestamp > int64(time.Now().UnixNano()) {
 		return fmt.Errorf("timestamp of current block must less than curent timestamp")
 	}
 
@@ -212,7 +213,7 @@ func (B *Blockchain) ValidateBlock(b *Block) error {
 	if merklehash != b.DataHash {
 		return fmt.Errorf("invalid merkle hash root ")
 	}
-	fmt.Println("validation of block successfull")
+	// fmt.Println("validation of block successfull")
 	return nil
 }
 

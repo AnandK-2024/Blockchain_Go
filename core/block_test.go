@@ -35,7 +35,7 @@ func randomBlock(t *testing.T, height uint32, prevhash types.Hash) *Block {
 		Height:        height,
 	}
 	txs := &Transaction{
-		data: []byte("Anand --> bob: 5ETH"),
+		data: []byte{0x0, 0x05},
 	}
 	return NewBlock(header, []*Transaction{txs})
 }

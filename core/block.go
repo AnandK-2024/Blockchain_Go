@@ -98,7 +98,7 @@ func (b *Block) AddTransactions(txs []*Transaction) {
 }
 
 // calculate hash for any data
-func CalculateHash(data any) types.Hash{
+func CalculateHash(data any) types.Hash {
 	buf := &bytes.Buffer{}
 	// NewEncoder returns a new encoder that will transmit on the io.Writer.
 	enc := gob.NewEncoder(buf)
@@ -151,6 +151,7 @@ func (b *Block) Sign(privkey *crypto.PrivateKey) error {
 
 // verifier verify the signature the block
 func (b *Block) Verify() error {
+	fmt.Println("signature of block", b.signature)
 	if b.signature == nil {
 		return fmt.Errorf("block has not signature")
 	}
@@ -162,10 +163,13 @@ func (b *Block) Verify() error {
 		return fmt.Errorf("invalid block header signature ")
 	}
 	// verify all transactions of block
-	for _, tx := range b.Transactions {
-		if err := tx.Verify(); err != nil {
-			return err
+	if len(b.Transactions) > 0 {
+		for _, tx := range b.Transactions {
+			if err := tx.Verify(); err != nil {
+				return err
+			}
 		}
+
 	}
 
 	return nil

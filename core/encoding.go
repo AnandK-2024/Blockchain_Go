@@ -28,7 +28,7 @@ func NewGobTxEncoder(w io.Writer) *GobTxEncoder {
 	}
 }
 
-//encoding a transaction object into a binary format
+// encoding a transaction object into a binary format
 func (g *GobTxEncoder) Encode(tx *Transaction) error {
 	return gob.NewEncoder(g.w).Encode(tx)
 }
@@ -58,7 +58,7 @@ func NewGobTxDecoder(r io.Reader) *GobtxDecoder {
 	}
 }
 
-//decode transaction from a binary format
+// decode transaction from a binary format
 func (g *GobtxDecoder) Decode(tx *Transaction) error {
 	return gob.NewDecoder(g.r).Decode(tx)
 }
@@ -86,7 +86,7 @@ func NewGobBlockEncoder(w io.Writer) *GobBlockEncoder {
 	}
 }
 
-//encoding a Block object into a binary format
+// encoding a Block object into a binary format
 func (g *GobBlockEncoder) Encode(b *Block) error {
 	return gob.NewEncoder(g.w).Encode(b)
 }
@@ -102,7 +102,7 @@ func NewGobBlockDecoder(r io.Reader) *GobBlockDecoder {
 	}
 }
 
-//decode block from a binary format
+// decode block from a binary format
 func (g *GobBlockDecoder) Decode(b *Block) error {
 	return gob.NewDecoder(g.r).Decode(b)
 }
