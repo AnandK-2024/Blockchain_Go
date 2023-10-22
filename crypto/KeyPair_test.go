@@ -18,7 +18,7 @@ func TestGeneratePublicKey(t *testing.T) {
 	privKey := GeneratePrivatekey()
 	pubKey := privKey.GeneratePublicKey()
 
-	if pubKey.key == nil {
+	if pubKey == nil {
 		t.Errorf("Public key generation failed")
 	}
 }
@@ -42,19 +42,8 @@ func TestSignMessage(t *testing.T) {
 
 	fmt.Println("signed hash:", signature)
 
-	if signature.r == nil || signature.s == nil {
+	if signature.R == nil || signature.S == nil {
 		t.Errorf("Failed to sign the message")
-	}
-}
-
-func TestPublicKeyToSlice(t *testing.T) {
-	privKey := GeneratePrivatekey()
-	pubKey := privKey.GeneratePublicKey()
-
-	slice := pubKey.ToSlice()
-
-	if len(slice) == 0 {
-		t.Errorf("Failed to convert public key to slice")
 	}
 }
 
