@@ -29,14 +29,14 @@ func TestSendNativeTransferTamper(t *testing.T) {
 	accountBob.balance = amount
 
 	tx := NewTransaction([]byte{})
-	tx.from = privKeyBob.GeneratePublicKey()
-	tx.to = privKeyAlice.GeneratePublicKey()
-	tx.value = amount
+	tx.From = privKeyBob.GeneratePublicKey()
+	tx.To = privKeyAlice.GeneratePublicKey()
+	tx.Value = amount
 	tx.Sign(&privKeyBob)
 	tx.Hash()
 
 	hackerPrivKey := crypto.GeneratePrivatekey()
-	tx.to = hackerPrivKey.GeneratePublicKey()
+	tx.To = hackerPrivKey.GeneratePublicKey()
 
 	block.AddTransaction(tx)
 	privkey = hackerPrivKey.GeneratePublicKey()
@@ -62,9 +62,9 @@ func TestSendNativeTransferInsuffientBalance(t *testing.T) {
 	accountBob.balance = uint64(99)
 
 	tx := NewTransaction([]byte{})
-	tx.from = privKeyBob.GeneratePublicKey()
-	tx.to = privKeyAlice.GeneratePublicKey()
-	tx.value = amount
+	tx.From = privKeyBob.GeneratePublicKey()
+	tx.To = privKeyAlice.GeneratePublicKey()
+	tx.Value = amount
 	tx.Sign(&privKeyBob)
 	tx.Hash()
 	fmt.Println("alice => \n", pubkeyAlice)
@@ -88,9 +88,11 @@ func TestAddBlock(t *testing.T) {
 
 	// lenBlocks := 5
 	block := randomBlock(t, uint32(1), getPrevBlockHash(t, bc, uint32(0)))
+	SignBlocktxs(t, block, privKeycoinbase)
 	bc.Mine(block, &privKeycoinbase)
 	// block.Sign(&privKeycoinbase)
-	SignBlocktxs(t, block, privKeycoinbase)
+	fmt.Println("transation of block:", block.Transactions)
+	fmt.Println("merkel hash root ", block.DataHash, CalculateMerkleRoot(block.Transactions))
 	assert.Nil(t, bc.AddBlock(block))
 	// for i := 0; i < lenBlocks; i++ {
 
@@ -166,7 +168,7 @@ func TestAddBlockToHigh(t *testing.T) {
 
 func newBlockchainWithGenesis(t *testing.T, coinbaseAddr types.Address) *Blockchain {
 	b := randomBlock(t, 0, types.Randomhash())
-	b.hash = b.Hash()
+	b.BlockHash = b.Hash()
 	bc, err := NewBlockchian(log.NewNopLogger(), b, coinbaseAddr)
 	assert.Nil(t, err)
 
@@ -176,7 +178,7 @@ func newBlockchainWithGenesis(t *testing.T, coinbaseAddr types.Address) *Blockch
 func getPrevBlockHash(t *testing.T, bc *Blockchain, height uint32) types.Hash {
 	prevBlock, err := bc.GetBlock(height)
 	assert.Nil(t, err)
-	return prevBlock.hash
+	return prevBlock.BlockHash
 }
 
 func SignBlocktxs(t *testing.T, b *Block, privatekey crypto.PrivateKey) {

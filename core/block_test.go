@@ -1,7 +1,10 @@
 package core
 
 import (
+	"bytes"
+	// "encoding/gob"
 	"fmt"
+	"reflect"
 	"testing"
 	"time"
 
@@ -15,13 +18,13 @@ import (
 func RandomBlock(height uint32) *Block {
 	header := &Header{
 		Version:       1,
-		prevblockHash: types.Randomhash(),
+		PrevblockHash: types.Randomhash(),
 		DataHash:      types.Randomhash(),
 		Timestamp:     time.Now().UnixNano(),
 		Height:        height,
 	}
 	txs := Transaction{
-		data: []byte("Anand --> bob: 5ETH"),
+		Data: []byte("Anand --> bob: 5ETH"),
 	}
 	return NewBlock(header, []*Transaction{&txs})
 }
@@ -29,20 +32,20 @@ func RandomBlock(height uint32) *Block {
 func randomBlock(t *testing.T, height uint32, prevhash types.Hash) *Block {
 	header := &Header{
 		Version:       1,
-		prevblockHash: prevhash,
+		PrevblockHash: prevhash,
 		DataHash:      types.Randomhash(),
 		Timestamp:     time.Now().UnixNano(),
 		Height:        height,
 	}
 	txs := &Transaction{
-		data: []byte{0x0, 0x05},
+		Data: []byte{0x0, 0x05},
 	}
 	return NewBlock(header, []*Transaction{txs})
 }
 
 func TestHashBlock(t *testing.T) {
 	genesisBlock := RandomBlock(0)
-	fmt.Println("prev hash", genesisBlock.prevblockHash)
+	fmt.Println("prev hash", genesisBlock.PrevblockHash)
 	fmt.Println("current blockhash", genesisBlock.Hash())
 
 }
@@ -52,7 +55,7 @@ func TestSignBlock(t *testing.T) {
 	b := RandomBlock(100)
 
 	assert.Nil(t, b.Sign(&privKey))
-	assert.NotNil(t, b.signature)
+	assert.NotNil(t, b.Signature)
 }
 
 func TestVerifyBlock(t *testing.T) {
@@ -63,7 +66,7 @@ func TestVerifyBlock(t *testing.T) {
 	// assert.Nil(t, b.Verify())
 
 	otherPrivKey := crypto.GeneratePrivatekey()
-	b.validator = otherPrivKey.GeneratePublicKey()
+	b.Validator = otherPrivKey.GeneratePublicKey()
 	assert.NotNil(t, b.Verify())
 
 	b.Height = 100
@@ -74,7 +77,7 @@ func TestBlockHash(t *testing.T) {
 	block := &Block{
 		Header: &Header{
 			Version:       1,
-			prevblockHash: types.Hash{},
+			PrevblockHash: types.Hash{},
 			DataHash:      types.Hash{},
 			Timestamp:     0,
 			Height:        0,
@@ -95,7 +98,7 @@ func TestBlockAddTransaction(t *testing.T) {
 	block := &Block{
 		Header: &Header{
 			Version:       1,
-			prevblockHash: types.Hash{},
+			PrevblockHash: types.Hash{},
 			DataHash:      types.Hash{},
 			Timestamp:     0,
 			Height:        0,
@@ -112,4 +115,46 @@ func TestBlockAddTransaction(t *testing.T) {
 
 	// Assert that the block's transaction list is not empty
 	assert.NotEmpty(t, block.Transactions, "Block's transaction list should not be empty")
+}
+
+func TestEncodeDecode(t *testing.T) {
+	// Create a sample block
+	block := &Block{
+		Header: &Header{
+			Version:       1,
+			PrevblockHash: types.Hash{},
+			DataHash:      types.Hash{},
+			Timestamp:     0,
+			Height:        0,
+		},
+		Transactions: []*Transaction{NewRandomTransaction(4), NewRandomTransaction(400), NewRandomTransaction(40)},
+	}
+
+	// Create a buffer to encode the block
+	var buf bytes.Buffer
+	encoder := NewGobBlockEncoder(&buf)
+
+	// Encode the block
+	err := encoder.Encode(block)
+	if err != nil {
+		t.Errorf("Error encoding block: %v", err)
+	}
+
+	decorder := NewGobBlockDecoder(&buf)
+	// Create a new block to decode into
+	decodedBlock := &Block{}
+
+	// Create a buffer from the encoded data
+	// dec := gob.NewDecoder(bytes.NewReader(buf.Bytes()))
+
+	// Decode the block
+	err = decodedBlock.Decode(decorder)
+	if err != nil {
+		t.Errorf("Error decoding block: %v", err)
+	}
+	assert.Equal(t, block, decodedBlock)
+	// Compare the original block and the decoded block
+	if !reflect.DeepEqual(block, decodedBlock) {
+		t.Errorf("Decoded block does not match original block")
+	}
 }

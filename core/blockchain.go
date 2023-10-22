@@ -76,9 +76,9 @@ func (B *Blockchain) AddBlock(block *Block) error {
 		return err
 	}
 	for _, tx := range block.Transactions {
-		B.logger.Log("msg", "execution code", "len", len(tx.data), "hash", tx.Hash())
+		B.logger.Log("msg", "execution code", "len", len(tx.Data), "hash", tx.Hash())
 		state := NewState()
-		vm := NewVM(tx.data, *state)
+		vm := NewVM(tx.Data, *state)
 		if err := vm.Run(); err != nil {
 			return err
 		}
@@ -107,7 +107,7 @@ func (B *Blockchain) addBlockWithoutValidation(b *Block) error {
 	// add blocks in blockchain
 	B.blocks = append(B.blocks, b)
 	// map blockhash with block
-	B.blockStore[b.hash] = b
+	B.blockStore[b.BlockHash] = b
 	// add transactions into blockchain
 	for _, tx := range b.Transactions {
 		B.txStore[tx.Hash()] = tx
@@ -191,13 +191,13 @@ func (B *Blockchain) ValidateBlock(b *Block) error {
 
 	// validate prevhash of block
 	hash := prevBlock.Hash()
-	if b.prevblockHash != hash {
-		return fmt.Errorf("Hash of previous block: %d is invalid", b.prevblockHash)
+	if b.PrevblockHash != hash {
+		return fmt.Errorf("Hash of previous block: %d is invalid", b.PrevblockHash)
 	}
 
 	// verify the block signature
 	if err := b.Verify(); err != nil {
-		return fmt.Errorf("invalid block signature")
+		return fmt.Errorf("invalid block signature %s", err.Error())
 	}
 
 	// validate timestamp of block
@@ -207,11 +207,11 @@ func (B *Blockchain) ValidateBlock(b *Block) error {
 		return fmt.Errorf("timestamp of current block must less than curent timestamp")
 	}
 
-	// validate merklehashroot of transactions
+	// validate merklehash root of transactions
 	hashstring := CalculateMerkleRoot(b.Transactions)
 	merklehash, _ := StringToHash(hashstring)
 	if merklehash != b.DataHash {
-		return fmt.Errorf("invalid merkle hash root ")
+		return fmt.Errorf("invalid merkle hash root. It must be :%x", merklehash)
 	}
 	// fmt.Println("validation of block successfull")
 	return nil
@@ -230,7 +230,7 @@ func (B *Blockchain) Mine(b *Block, privkey *crypto.PrivateKey) (types.Hash, err
 
 	// calculate hash of block and return
 	hash := b.Hash()
-	b.hash = hash
+	b.BlockHash = hash
 
 	//sign the block by miner/validator
 	b.Sign(privkey)

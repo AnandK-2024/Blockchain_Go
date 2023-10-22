@@ -1,48 +1,52 @@
 package core
 
-// import (
-// 	"fmt"
-// 	"reflect"
-// 	"testing"
+import (
+	"bytes"
+	"fmt"
+	"testing"
+	"time"
 
-// 	"github.com/AnandK-2024/Blockchain/crypto"
-// )
+	"github.com/AnandK-2024/Blockchain/crypto"
+	// "github.com/AnandK-2024/Blockchain/crypto"
+)
 
-// func TestTransactionEncodingDecoding(t *testing.T) {
-// 	// privKey:=crypto.GeneratePrivatekey()
-// 	// Create a sample transaction
-// 	tx := &Transaction{
-// 		data:      []byte("sample data"),
-// 		value:     100,
-// 		from:      crypto.PublicKey{},
-// 		signature: &crypto.Signature{},
-// 		to:        crypto.PublicKey{},
-// 		Nonce:     123,
-// 		firstSeen: 1634720000,
-// 	}
+func TestTransactionEncodingDecoding(t *testing.T) {
+	privKey := crypto.GeneratePrivatekey()
+	pubkey := privKey.GeneratePublicKey()
 
-// 	// Encode the transaction
-// 	var buf bytes.Buffer
-// 	encoder := NewGobTxEncoder(&buf)
-// 	err := encoder.Encode(tx)
-// 	if err != nil {
-// 		t.Errorf("Error encoding transaction: %s", err)
-// 	}
+	// Create a sample transaction
+	tx := &Transaction{
+		Data:      []byte("sample data"),
+		Value:     100,
+		From:      crypto.PublicKey{},
+		Signature: &crypto.Signature{},
+		To:        pubkey,
+		Nonce:     123,
+		Timestamp: time.Now().UnixMicro(),
+	}
 
-// 	// Decode the transaction
-// 	decoder := NewGobTxDecoder(&buf)
-// 	decodedTx := &Transaction{}
-// 	err = decoder.Decode(decodedTx)
-// 	if err != nil {
-// 		t.Errorf("Error decoding transaction: %s", err)
-// 	}
+	// Encode the transaction
+	var buf bytes.Buffer
+	encoder := NewGobTxEncoder(&buf)
+	err := encoder.Encode(tx)
+	if err != nil {
+		t.Errorf("Error encoding transaction: %s", err)
+	}
 
-// 	fmt.Println(tx, "decoded transaction\n", decodedTx)
-// 	// Compare the original and decoded transactions
-// 	// if !reflect.DeepEqual(tx, decodedTx) {
-// 	// 	t.Errorf("Decoded transaction does not match the original")
-// 	// }
-// }
+	// Decode the transaction
+	decoder := NewGobTxDecoder(&buf)
+	decodedTx := &Transaction{}
+	err = decoder.Decode(decodedTx)
+	if err != nil {
+		t.Errorf("Error decoding transaction: %s", err)
+	}
+
+	fmt.Println(tx, "decoded transaction\n", decodedTx)
+	// Compare the original and decoded transactions
+	// if !reflect.DeepEqual(tx, decodedTx) {
+	// 	t.Errorf("Decoded transaction does not match the original")
+	// }
+}
 
 // func TestBlockEncodingDecoding(t *testing.T) {
 // 	// Create a sample block

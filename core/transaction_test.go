@@ -4,6 +4,7 @@ import (
 	// "bytes"
 	// "crypto/sha256"
 	// "encoding/hex"
+
 	"bytes"
 	"fmt"
 	"testing"
@@ -17,16 +18,16 @@ func TestTransaction(t *testing.T) {
 	privkey := crypto.GeneratePrivatekey()
 	tx := NewTransaction([]byte("Anand-->bob: 10ETH"))
 	err := tx.Sign(&privkey)
-	fmt.Println("transaction signature", tx.signature)
+	fmt.Println("transaction signature", tx.Signature)
 	assert.Nil(t, err)
-	assert.NotNil(t, tx.signature)
+	assert.NotNil(t, tx.Signature)
 }
 func TestNewRandomTransaction(t *testing.T) {
 	datasize := 10
 	tx := NewRandomTransaction(datasize)
 
 	assert.NotNil(t, tx)
-	assert.Len(t, tx.data, datasize)
+	assert.Len(t, tx.Data, datasize)
 	assert.NotZero(t, tx.Nonce)
 }
 
@@ -93,7 +94,6 @@ func TestTransaction_SetFirstSeen(t *testing.T) {
 	assert.Equal(t, firstSeen, tx.FirstSeen())
 }
 
-
 func TestTxEncodeDecode(t *testing.T) {
 	tx := NewRandomTransaction(100)
 	// fmt.Println("new random transaction is:=", tx)
@@ -102,6 +102,6 @@ func TestTxEncodeDecode(t *testing.T) {
 	txDecode := new(Transaction)
 	assert.Nil(t, txDecode.Decode(NewGobTxDecoder(buf)))
 	fmt.Println("decoded transaction:", txDecode)
-	// assert.Equal(t, tx, txDecode)
+	assert.Equal(t, tx, txDecode)
 
 }

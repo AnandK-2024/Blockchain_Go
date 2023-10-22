@@ -17,15 +17,13 @@ import (
 )
 
 type Transaction struct {
-	data      []byte
-	value     uint64
-	from      crypto.PublicKey
-	signature *crypto.Signature
-	to        crypto.PublicKey
+	Data      []byte
+	Value     uint64
+	From      crypto.PublicKey
+	Signature *crypto.Signature
+	To        crypto.PublicKey
 	Nonce     uint64
-	// hash  types.Hash
-	// first seen is the timestamp when tx is seen locally
-	firstSeen int64
+	Timestamp int64
 }
 
 // type MintTx struct {
@@ -46,20 +44,20 @@ step4: verifier can verify transaction
 
 func NewTransaction(data []byte) *Transaction {
 	return &Transaction{
-		data:      data,
+		Data:      data,
 		Nonce:     uint64(rand.Int63n(100)),
-		firstSeen: int64(time.Now().UnixNano()),
+		Timestamp: int64(time.Now().UnixNano()),
 	}
 }
 
 // new complete transaction
 func NewCompleteTx(to crypto.PublicKey, value uint64, data []byte, nonce uint64) *Transaction {
 	return &Transaction{
-		data:      data,
-		value:     value,
-		to:        to,
+		Data:      data,
+		Value:     value,
+		To:        to,
 		Nonce:     nonce,
-		firstSeen: time.Now().Unix(),
+		Timestamp: time.Now().Unix(),
 	}
 }
 
@@ -86,22 +84,22 @@ func (tx Transaction) Hash() types.Hash {
 }
 
 func (tx *Transaction) Sign(privkey *crypto.PrivateKey) error {
-	signature, err := privkey.SignMessage(tx.data)
+	signature, err := privkey.SignMessage(tx.Data)
 	if err != nil {
 		fmt.Println("unable to sign block with private key")
 		return err
 	}
-	tx.from = privkey.GeneratePublicKey()
-	tx.signature = signature
+	tx.From = privkey.GeneratePublicKey()
+	tx.Signature = signature
 	return nil
 }
 
 func (tx *Transaction) Verify() error {
-	if tx.signature == nil {
+	if tx.Signature == nil {
 		return fmt.Errorf("tx has not signature")
 	}
-	sig := tx.signature
-	sucess := sig.Verify(tx.from, tx.data)
+	sig := tx.Signature
+	sucess := sig.Verify(tx.From, tx.Data)
 	if !sucess {
 		return fmt.Errorf("invalid tx signature ")
 	}
@@ -161,11 +159,11 @@ func StringToHash(hashString string) (types.Hash, error) {
 }
 
 func (tx *Transaction) SetFirstSeen(t int64) {
-	tx.firstSeen = t
+	tx.Timestamp = t
 }
 
 func (tx *Transaction) FirstSeen() int64 {
-	return tx.firstSeen
+	return tx.Timestamp
 }
 
 // enoding Transaction

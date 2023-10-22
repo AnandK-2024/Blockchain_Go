@@ -40,8 +40,8 @@ func (v *Blockvalidator) ValidateBlock(b *Block) error {
 
 	// validate prevhash of block
 	hash := Hash(prevHeader)
-	if b.prevblockHash != hash {
-		return fmt.Errorf("Hash of previous block: %d is invalid", b.prevblockHash)
+	if b.PrevblockHash != hash {
+		return fmt.Errorf("Hash of previous block: %d is invalid", b.PrevblockHash)
 	}
 
 	// verify the block signature
