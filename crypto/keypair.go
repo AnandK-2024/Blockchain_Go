@@ -5,6 +5,7 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"math/big"
 
@@ -71,4 +72,9 @@ func (Sig Signature) Verify(pub PublicKey, hash []byte) bool {
 	}
 
 	return ecdsa.Verify(key, hash, Sig.R, Sig.S)
+}
+
+func (Sig Signature) String() string {
+	b := append(Sig.S.Bytes(), Sig.R.Bytes()...)
+	return hex.EncodeToString(b)
 }

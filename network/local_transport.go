@@ -77,8 +77,8 @@ func (t *LocalTransport) sendMessage(to net.Addr, payload []byte) error {
 	//from: sender of the message
 	// payload: message that need send through channel to reciever
 	peer.consumeCh <- RPC{
-		from:    t.addr,
-		payload: bytes.NewReader(payload),
+		From:    t.addr,
+		Payload: bytes.NewReader(payload),
 	}
 
 	return nil

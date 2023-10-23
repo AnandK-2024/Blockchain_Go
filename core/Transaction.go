@@ -18,7 +18,7 @@ import (
 
 type Transaction struct {
 	Data      []byte
-	Value     uint64
+	Value     uint64	
 	From      crypto.PublicKey
 	Signature *crypto.Signature
 	To        crypto.PublicKey

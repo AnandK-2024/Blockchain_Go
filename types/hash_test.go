@@ -60,7 +60,7 @@ func TestString(t *testing.T) {
 	// Test case 1: Valid hash
 	validHash := HashFromByte(make([]byte, 32))
 	expectedString := hex.EncodeToString(validHash.ToSlice())
-	result := validHash.string()
+	result := validHash.String()
 	if result != expectedString {
 		t.Errorf("Expected string '%s', but got '%s'", expectedString, result)
 	}
@@ -68,7 +68,7 @@ func TestString(t *testing.T) {
 	// Test case 2: Invalid hash
 	invalidHash := Hash{}
 	expectedString = hex.EncodeToString(invalidHash.ToSlice())
-	result = invalidHash.string()
+	result = invalidHash.String()
 	if result != expectedString {
 		t.Errorf("Expected string '%s', but got '%s'", expectedString, result)
 	}

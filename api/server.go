@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/gob"
 	"encoding/hex"
 	"net/http"
 	"strconv"
@@ -52,13 +53,22 @@ func intoJsonBlock(block *core.Block) Block {
 type Server struct {
 	ListenAddr string
 	Bc         *core.Blockchain
+	txchan     chan *core.Transaction
 }
 
+func NewServer(listenaddr string, bc *core.Blockchain, txchan chan *core.Transaction) *Server {
+	return &Server{
+		ListenAddr: listenaddr,
+		Bc:         bc,
+		txchan:     txchan,
+	}
+}
 func (s *Server) Start() error {
 	// New creates an instance of Echo.
 	e := echo.New()
 	e.GET("/tx/:hash", s.handleGetTx)
 	e.GET("/block/:hashorId", s.handleGetBlock)
+	e.POST("/tx", s.handlePostTx)
 	return e.Start(s.ListenAddr)
 }
 
@@ -105,7 +115,11 @@ func (s *Server) handleGetBlock(c echo.Context) error {
 
 }
 
-func handlePostTx(c echo.Context) error {
-
+func (s *Server) handlePostTx(c echo.Context) error {
+	tx := &core.Transaction{}
+	if err := gob.NewDecoder(c.Request().Body).Decode(tx); err != nil {
+		return c.JSON(http.StatusBadRequest, err.Error())
+	}
+	s.txchan <- tx
 	return nil
 }

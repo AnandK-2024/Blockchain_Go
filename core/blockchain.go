@@ -39,6 +39,7 @@ type Blockchain struct {
 // create new blockchain with genesis block
 func NewBlockchian(l log.Logger, genesis *Block, CoinbaseAddr types.Address) (*Blockchain, error) {
 	account := NewAccountState()
+	// coinbasePub:=
 	account.CreateAccount(CoinbaseAddr)
 
 	bc := &Blockchain{
@@ -109,9 +110,14 @@ func (B *Blockchain) addBlockWithoutValidation(b *Block) error {
 	// map blockhash with block
 	B.blockStore[b.BlockHash] = b
 	// add transactions into blockchain
-	for _, tx := range b.Transactions {
-		B.txStore[tx.Hash()] = tx
+	// for _, tx := range b.Transactions {
+	// 	// fmt.Println("tx adding..................")
+	// 	B.txStore[tx.Hash()] = tx
+	// }
+	for i := 0; i < len(b.Transactions); i++ {
+		B.txStore[b.Transactions[i].Hash()] = b.Transactions[i]
 	}
+
 	hash := b.Hash()
 	B.logger.Log(
 		"msg", "new block",

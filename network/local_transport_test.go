@@ -54,8 +54,8 @@ func TestSendMessage(t *testing.T) {
 	fmt.Println("new server")
 	fmt.Println(trb)
 	fmt.Println(rpc)
-	assert.Equal(t, tra.Addr(), rpc.from)
-	reader := rpc.payload
+	assert.Equal(t, tra.Addr(), rpc.From)
+	reader := rpc.Payload
 	actual := make([]byte, len(payload))
 	_, _ = reader.Read(actual)
 	assert.Equal(t, payload, actual)
