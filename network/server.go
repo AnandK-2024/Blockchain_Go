@@ -185,10 +185,10 @@ free:
 			// fmt.Printf("new peer$$$$$$ =>%v\n", peer)
 			s.peer[peer.connection.RemoteAddr()] = peer
 			go peer.readLoop(s.rpcCh)
-			// if err := s.sendGetStatusMessage(peer); err != nil {
-			// 	s.Logger.Log("err", err)
-			// 	continue
-			// }
+			if err := s.sendGetStatusMessage(peer); err != nil {
+				s.Logger.Log("err", err)
+				continue
+			}
 
 			// s.Logger.Log("msg", "peer added to the server", "outgoing", peer.Outgoing, "addr", peer.conn.RemoteAddr())
 
