@@ -1,4 +1,4 @@
-# My Blockchain Project in Golang
+# Blockchain_Go
 
 ## Overview
 This is a blockchain project developed from scratch using Golang. It includes various components such as blocks, transactions, account state, virtual machine, transaction pool, encoding/decoding, API, and ECDSA signature/verification. Additionally, I have implemented the TCP Ghost protocol for the transfer and receipt of transactions and blocks between peers in a peer-to-peer network.
