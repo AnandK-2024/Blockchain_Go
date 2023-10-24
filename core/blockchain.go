@@ -77,13 +77,15 @@ func (B *Blockchain) AddBlock(block *Block) error {
 		return err
 	}
 	for _, tx := range block.Transactions {
-		B.logger.Log("msg", "execution code", "len", len(tx.Data), "hash", tx.Hash())
-		state := NewState()
-		vm := NewVM(tx.Data, *state)
-		if err := vm.Run(); err != nil {
-			return err
+		if len(tx.Data) > 1 {
+			B.logger.Log("msg", "execution code", "len", len(tx.Data), "hash", tx.Hash())
+			state := NewState()
+			vm := NewVM(tx.Data, *state)
+			if err := vm.Run(); err != nil {
+				return err
+			}
+			B.logger.Log("vm result:", vm.stack.peek())
 		}
-		B.logger.Log("vm result:", vm.stack.peek())
 	}
 	B.addBlockWithoutValidation(block)
 

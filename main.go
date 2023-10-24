@@ -60,7 +60,7 @@ func main() {
 	RemoteNode := makeServer("Remote transport", nil, ":7000", nil, "")
 	go RemoteNode.Start()
 
-	localNode := makeServer("local transport", &ValidatorPrivkey, ":8000", []string{":7000"}, ":8081")
+	localNode := makeServer("local transport", &ValidatorPrivkey, ":8080", []string{":7000"}, ":8081")
 	go localNode.Start()
 
 	// RemoteNodeB := makeServer("RemoteB transport", nil, ":9000", nil, "")
@@ -72,15 +72,15 @@ func main() {
 	// 	go LateNode.Start()
 	// }()
 	time.Sleep(1 * time.Second)
-	if err := SendTx(ValidatorPrivkey); err != nil {
-		panic(err)
+
+	for i := 0; i < 10; i++ {
+		if err := SendTx(ValidatorPrivkey); err != nil {
+			panic(err)
+		}
+		time.Sleep(2 * time.Second)
+
 	}
 	time.Sleep(1 * time.Second)
-
-	// for i := 0; i < 10; i++ {
-	// 	time.Sleep(1 * time.Second)
-
-	// }
 
 	// go tcptester()
 	select {}
@@ -143,7 +143,7 @@ func SendTx(FromPrivatekey crypto.PrivateKey) error {
 	}
 	client := http.Client{}
 	_, err = client.Do(req)
-	fmt.Println("tx req has been sent through api.")
+	// fmt.Println("tx req has been sent through api.")
 	return err
 
 }

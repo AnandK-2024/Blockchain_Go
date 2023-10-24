@@ -17,6 +17,11 @@ type RPC struct {
 	Payload io.Reader // data from server through rpc
 
 }
+type RPCProcessor interface {
+	ProcessMessage(*DecodedMessage) error
+}
+
+type RPCDecodeFunc func(RPC) (*DecodedMessage, error)
 
 // byte type message
 type MessageType byte
@@ -100,12 +105,6 @@ func DefaultRPCDecodeFunc(rpc RPC) (*DecodedMessage, error) {
 	}
 }
 
-type RPCProcessor interface {
-	ProcessMessage(*DecodedMessage) error
-}
-
 func init() {
 	gob.Register(elliptic.P256())
 }
-
-type RPCDecodeFunc func(RPC) (*DecodedMessage, error)

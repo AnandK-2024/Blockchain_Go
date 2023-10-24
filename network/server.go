@@ -12,7 +12,8 @@ import (
 	"github.com/AnandK-2024/Blockchain/crypto"
 	"github.com/AnandK-2024/Blockchain/types"
 	"github.com/go-kit/log"
-	"github.com/sirupsen/logrus"
+
+	// "github.com/sirupsen/logrus"
 
 	"github.com/AnandK-2024/Blockchain/api"
 	"github.com/AnandK-2024/Blockchain/core"
@@ -152,20 +153,20 @@ func (s *Server) bootstrap() {
 	}
 }
 
-func (s *Server) HandleTransaction(tx *core.Transaction) error {
-	if err := tx.Verify(); err != nil {
-		return err
-	}
-	logrus.WithFields(logrus.Fields{
-		"hash": tx.Hash(),
-	}).Info("adding new transaction to mempool")
+// func (s *Server) HandleTransaction(tx *core.Transaction) error {
+// 	if err := tx.Verify(); err != nil {
+// 		return err
+// 	}
+// 	logrus.WithFields(logrus.Fields{
+// 		"hash": tx.Hash(),
+// 	}).Info("adding new transaction to mempool")
 
-	s.mempool.Add(tx)
-	fmt.Println("transaction added in mempool")
+// 	s.mempool.Add(tx)
+// 	fmt.Println("transaction added in mempool")
 
-	return nil
+// 	return nil
 
-}
+// }
 
 func (s *Server) Start() {
 	// start tcp transport
@@ -175,14 +176,12 @@ func (s *Server) Start() {
 
 free:
 	for {
-		// fmt.Println("data recieve from api:", <-s.txchan)
 		select {
 		case tx := <-s.txchan:
 			if err := s.ProcessTransaction(tx); err != nil {
 				s.Logger.Log("process tx error", err)
 			}
 		case peer := <-s.peerCh:
-			// fmt.Printf("new peer$$$$$$ =>%v\n", peer)
 			s.peer[peer.connection.RemoteAddr()] = peer
 			go peer.readLoop(s.rpcCh)
 			if err := s.sendGetStatusMessage(peer); err != nil {
@@ -190,18 +189,19 @@ free:
 				continue
 			}
 
-			// s.Logger.Log("msg", "peer added to the server", "outgoing", peer.Outgoing, "addr", peer.conn.RemoteAddr())
+			s.Logger.Log("msg", "peer added to the server", "outgoing", peer.Outgoing, "addr", peer.connection.RemoteAddr())
 
 		case rpc := <-s.rpcCh:
-			fmt.Println(" rpch*******", rpc)
-			_, err := s.RPCDecodeFunc(rpc)
+			msg, err := s.RPCDecodeFunc(rpc)
 			if err != nil {
 				s.Logger.Log("RPC error", rpc)
 				continue
 			}
-			// if err := s.RPCProcessor.ProcessMessage(msg); err != nil {
-			// 	s.Logger.Log("error", err)
-			// }
+			if err := s.RPCProcessor.ProcessMessage(msg); err != nil {
+				if err != core.ErrBlockKnown {
+					s.Logger.Log("error", err)
+				}
+			}
 
 		case <-s.quitCh:
 			break free
@@ -218,16 +218,44 @@ func (s *Server) ProcessMessage(msg *DecodedMessage) error {
 		return s.ProcessTransaction(t)
 	case *core.Block:
 		return s.ProcessBlock(t)
+		// if s.isValidator {
+		// }
 	case *BlockMessage:
 		return s.ProcessBlockMessage(msg.From, t)
-	default:
-		fmt.Print("default type ProcessMessage case called@@@@@@@@@@@@@@@@@@@@@@@@@@@")
-		return nil
+	case *GetStatusMessage:
+		s.processGetStatusMessage(msg.From, t)
+	case *StatusMessage:
+	case *GetBlocksMessage:
+
 	}
+
+	return nil
+
+}
+
+func (s *Server) processGetStatusMessage(from net.Addr, data *GetStatusMessage) error {
+	s.Logger.Log("msg", "recieve get status message", "from", from)
+	statusMessage := &StatusMessage{
+		ID:     s.ID,
+		Height: s.chain.Height(),
+	}
+	buf := new(bytes.Buffer)
+	if err := gob.NewEncoder(buf).Encode(statusMessage); err != nil {
+		return err
+	}
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	peer, ok := s.peer[from]
+	if !ok {
+		return fmt.Errorf("peer %s not known", peer.connection.RemoteAddr())
+	}
+	msg := NewMessage(MessageTypeStatus, buf.Bytes())
+	return peer.Send(msg.Byte())
 
 }
 
 func (s *Server) ProcessBlockMessage(from net.Addr, data *BlockMessage) error {
+	fmt.Println("!!!!!block recieved!!!!!")
 	s.Logger.Log("msg", "!!!!!block recieved!!!!!", "from", from)
 	// return index and value of block
 	for _, block := range data.Blocks {
@@ -256,7 +284,7 @@ func (s *Server) ProcessBlock(b *core.Block) error {
 
 // process transaction in mempool
 func (s *Server) ProcessTransaction(tx *core.Transaction) error {
-	fmt.Println("start ProcessTransaction through recieve data from api")
+	// fmt.Println("start ProcessTransaction through recieve data from api")
 	// find hash of transaction
 	hash := tx.Hash()
 	// check mempool contains this tx or not. if tx not avilable in mempool then process this transaction
@@ -269,9 +297,14 @@ func (s *Server) ProcessTransaction(tx *core.Transaction) error {
 		// transaction not verified
 		return err
 	}
-
+	s.Logger.Log(
+		"msg", "adding new tx into mempool",
+		"hash", hash,
+		"mempoolPending", s.mempool.PendingCount(),
+	)
 	// broadcast the transactions
 	go s.BroadcastTx(tx)
+	s.mempool.Add(tx)
 	return nil
 }
 
@@ -308,6 +341,7 @@ func (s *Server) BroadcastTx(tx *core.Transaction) error {
 
 // broadcast block in network
 func (s *Server) BroadcastBlock(b *core.Block) error {
+	fmt.Println("block broadcasting.........................................")
 	// enocde the block
 	buf := &bytes.Buffer{}
 	if err := b.Encode(core.NewGobBlockEncoder(buf)); err != nil {
@@ -356,7 +390,8 @@ func (s *Server) CreateNewBlock() error {
 	// for other validators still have these pending transactions
 	s.mempool.ClearPending()
 
-	// broadcast transaction
+	// broadcast block
+	go s.BroadcastBlock(block)
 
 	// return nil
 	return nil

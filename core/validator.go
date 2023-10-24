@@ -1,9 +1,11 @@
 package core
 
 import (
+	"errors"
 	"fmt"
 	"time"
 )
+var ErrBlockKnown = errors.New("block already known")
 
 type validator interface {
 	ValidateBlock(b *Block) error
