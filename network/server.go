@@ -42,7 +42,7 @@ type Server struct {
 	peer         map[net.Addr]*TCPPeer
 	TCPTransport *TCPTransport
 	Serveropts
-	lock        sync.Mutex
+	lock        sync.RWMutex
 	blockTime   time.Duration
 	mempool     *core.TxPool
 	chain       *core.Blockchain
@@ -111,6 +111,47 @@ func Newserver(opts Serveropts) (*Server, error) {
 
 	return s, nil
 }
+
+func (s *Server) processGetBlocksMessage(from net.Addr, data *GetBlocksMessage) error {
+	s.Logger.Log("msg", "received getBlocks message", "from", from)
+
+	var (
+		blocks    = []*core.Block{}
+		ourHeight = s.chain.Height()
+	)
+
+	if data.To == 0 {
+		for i := int(data.From); i <= int(ourHeight); i++ {
+			block, err := s.chain.GetBlock(uint32(i))
+			if err != nil {
+				return err
+			}
+
+			blocks = append(blocks, block)
+		}
+	}
+
+	blocksMsg := &BlockMessage{
+		Blocks: blocks,
+	}
+
+	buf := new(bytes.Buffer)
+	if err := gob.NewEncoder(buf).Encode(blocksMsg); err != nil {
+		return err
+	}
+
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
+	msg := NewMessage(MessageTypeBlocks, buf.Bytes())
+	peer, ok := s.peer[from]
+	if !ok {
+		return fmt.Errorf("peer %s not known", peer.connection.RemoteAddr())
+	}
+
+	return peer.Send(msg.Byte())
+}
+
 func (s *Server) sendGetStatusMessage(peer *TCPPeer) error {
 	var (
 		getStatusMsg = new(GetStatusMessage)
@@ -152,21 +193,6 @@ func (s *Server) bootstrap() {
 		}(addr)
 	}
 }
-
-// func (s *Server) HandleTransaction(tx *core.Transaction) error {
-// 	if err := tx.Verify(); err != nil {
-// 		return err
-// 	}
-// 	logrus.WithFields(logrus.Fields{
-// 		"hash": tx.Hash(),
-// 	}).Info("adding new transaction to mempool")
-
-// 	s.mempool.Add(tx)
-// 	fmt.Println("transaction added in mempool")
-
-// 	return nil
-
-// }
 
 func (s *Server) Start() {
 	// start tcp transport
@@ -218,19 +244,31 @@ func (s *Server) ProcessMessage(msg *DecodedMessage) error {
 		return s.ProcessTransaction(t)
 	case *core.Block:
 		return s.ProcessBlock(t)
-		// if s.isValidator {
-		// }
 	case *BlockMessage:
 		return s.ProcessBlockMessage(msg.From, t)
 	case *GetStatusMessage:
 		s.processGetStatusMessage(msg.From, t)
 	case *StatusMessage:
+		return s.processStatusMessage(msg.From, t)
 	case *GetBlocksMessage:
+		return s.processGetBlocksMessage(msg.From, t)
 
 	}
 
 	return nil
 
+}
+func (s *Server) processStatusMessage(from net.Addr, data *StatusMessage) error {
+	s.Logger.Log("msg", "received STATUS message", "from", from)
+
+	if data.Height <= s.chain.Height() {
+		s.Logger.Log("msg", "cannot sync blockHeight to low", "ourHeight", s.chain.Height(), "theirHeight", data.Height, "addr", from)
+		return nil
+	}
+
+	go s.requestBlockLoop(from)
+
+	return nil
 }
 
 func (s *Server) processGetStatusMessage(from net.Addr, data *GetStatusMessage) error {
@@ -266,6 +304,42 @@ func (s *Server) ProcessBlockMessage(from net.Addr, data *BlockMessage) error {
 
 	}
 	return nil
+
+}
+func (s *Server) requestBlockLoop(peer net.Addr) error {
+	ticker := time.NewTicker(3 * time.Second)
+
+	for {
+		ourHeight := s.chain.Height()
+
+		s.Logger.Log("msg", "requesting new blocks", "requesting height", ourHeight+1)
+
+		// In this case we are 100% sure that the node has blocks heigher than us.
+		getBlocksMessage := &GetBlocksMessage{
+			From: ourHeight + 1,
+			To:   0,
+		}
+
+		buf := new(bytes.Buffer)
+		if err := gob.NewEncoder(buf).Encode(getBlocksMessage); err != nil {
+			return err
+		}
+
+		s.lock.RLock()
+		defer s.lock.RUnlock()
+
+		msg := NewMessage(MessageTypeGetBlocks, buf.Bytes())
+		peer, ok := s.peer[peer]
+		if !ok {
+			return fmt.Errorf("peer %s not known", peer.connection.RemoteAddr())
+		}
+
+		if err := peer.Send(msg.Byte()); err != nil {
+			s.Logger.Log("error", "failed to send to peer", "err", err, "peer", peer)
+		}
+
+		<-ticker.C
+	}
 
 }
 
@@ -341,7 +415,7 @@ func (s *Server) BroadcastTx(tx *core.Transaction) error {
 
 // broadcast block in network
 func (s *Server) BroadcastBlock(b *core.Block) error {
-	fmt.Println("block broadcasting.........................................")
+	fmt.Println("block broadcasting......", "from:", s.TCPTransport.listenAddr)
 	// enocde the block
 	buf := &bytes.Buffer{}
 	if err := b.Encode(core.NewGobBlockEncoder(buf)); err != nil {

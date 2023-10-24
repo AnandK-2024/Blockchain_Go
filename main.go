@@ -57,20 +57,20 @@ func main() {
 	// go server.Start()
 	// time.Sleep(1 * time.Second)
 	ValidatorPrivkey := crypto.GeneratePrivatekey()
-	RemoteNode := makeServer("Remote transport", nil, ":7000", nil, "")
+	RemoteNode := makeServer("Remote transport", nil, ":7000", []string{":8080"}, "")
 	go RemoteNode.Start()
 
 	localNode := makeServer("local transport", &ValidatorPrivkey, ":8080", []string{":7000"}, ":8081")
 	go localNode.Start()
 
-	// RemoteNodeB := makeServer("RemoteB transport", nil, ":9000", nil, "")
-	// go RemoteNodeB.Start()
+	RemoteNodeB := makeServer("RemoteB transport", nil, ":9000", nil, "")
+	go RemoteNodeB.Start()
 
-	// go func() {
-	// 	time.Sleep(10 * time.Second)
-	// 	LateNode := makeServer("LateNode transport", nil, ":6000", []string{":6000", ":7000"}, "")
-	// 	go LateNode.Start()
-	// }()
+	go func() {
+		// time.Sleep(10 * time.Second)
+		LateNode := makeServer("LateNode transport", &ValidatorPrivkey, ":6000", []string{":8080", ":7000"}, "")
+		go LateNode.Start()
+	}()
 	time.Sleep(1 * time.Second)
 
 	for i := 0; i < 10; i++ {

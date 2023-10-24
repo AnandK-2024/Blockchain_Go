@@ -123,3 +123,7 @@ func (s *Server) handlePostTx(c echo.Context) error {
 	s.txchan <- tx
 	return nil
 }
+
+// func (s *Server) handleGetAccount(addr types.Address){
+
+// }
